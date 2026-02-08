@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Latin Vocab Trainer – Campus Bayern III</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .container { max-width: 750px; margin: 0 auto; }
+
+  h1 {
+    text-align: center;
+    font-size: 1.6rem;
+    color: #c9a96e;
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #666;
+    font-size: 0.82rem;
+    margin-bottom: 20px;
+  }
+
+  /* CONTROLS */
+  .controls {
+    background: #16213e;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 18px;
+  }
+  .ctrl-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+  }
+  .ctrl-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 100px; }
+  .ctrl-group label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #888;
+  }
+  .ctrl-group select, .ctrl-group input[type="number"] {
+    background: #0f3460;
+    border: 1px solid #1a4a7a;
+    color: #e0e0e0;
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.88rem;
+    outline: none;
+  }
+  .ctrl-group select:focus, .ctrl-group input[type="number"]:focus {
+    border-color: #c9a96e;
+  }
+  .ctrl-group input[type="number"] { width: 75px; }
+
+  /* Von-bis Zeile */
+  .range-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .range-row input[type="number"] {
+    background: #0f3460;
+    border: 1px solid #1a4a7a;
+    color: #e0e0e0;
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.88rem;
+    outline: none;
+    width: 68px;
+    text-align: center;
+  }
+  .range-row input[type="number"]:focus { border-color: #c9a96e; }
+  .range-row .dash { color: #666; font-size: 1rem; }
+
+  .btn-start {
+    background: linear-gradient(135deg, #c9a96e, #a07840);
+    color: #1a1a2e;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 24px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+  }
+  .btn-start:hover { opacity: 0.85; }
+
+  /* STATS */
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 28px;
+    margin-bottom: 18px;
+    font-size: 0.82rem;
+    color: #888;
+  }
+  .stats-bar span b { color: #c9a96e; }
+
+  /* PROGRESS */
+  .progress-track {
+    background: #16213e;
+    border-radius: 6px;
+    height: 6px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #c9a96e, #7ec8a0);
+    border-radius: 6px;
+    transition: width 0.3s;
+  }
+
+  /* CARD */
+  .card-wrap {
+    perspective: 1000px;
+    height: 260px;
+    margin-bottom: 16px;
+    cursor: pointer;
+  }
+  .card {
+    width: 100%; height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.5s;
+    border-radius: 14px;
+  }
+  .card.flipped { transform: rotateY(180deg); }
+
+  .card-front, .card-back {
+    position: absolute; inset: 0;
+    backface-visibility: hidden;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+    text-align: center;
+  }
+  .card-front {
+    background: linear-gradient(145deg, #16213e, #0f3460);
+    border: 1px solid #1a4a7a;
+  }
+  .card-back {
+    background: linear-gradient(145deg, #1b3a2a, #0d2818);
+    border: 1px solid #2a5a4a;
+    transform: rotateY(180deg);
+  }
+  .card-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #666;
+    margin-bottom: 10px;
+  }
+  .card-lemma {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: #c9a96e;
+    line-height: 1.3;
+  }
+  .card-translation {
+    font-size: 1.35rem;
+    color: #7ec8a0;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .card-chapters {
+    margin-top: 14px;
+    font-size: 0.73rem;
+    color: #556;
+  }
+  .card-chapters span {
+    background: #0f3460;
+    border-radius: 4px;
+    padding: 2px 7px;
+    margin: 0 2px;
+  }
+  .flip-hint {
+    font-size: 0.7rem;
+    color: #445;
+    margin-top: 10px;
+  }
+
+  /* REPEAT-BADGE */
+  .repeat-badge {
+    display: none;
+    background: #8b3a3a;
+    color: #e0a0a0;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+  }
+  .repeat-badge.show { display: inline-block; }
+
+  /* BUTTONS */
+  .btn-row {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .btn-action {
+    border: none;
+    border-radius: 8px;
+    padding: 9px 22px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .btn-action:active { transform: scale(0.96); }
+  .btn-action:hover { opacity: 0.85; }
+  .btn-knew { background: #2e7d52; color: #fff; }
+  .btn-didnt { background: #8b3a3a; color: #fff; }
+
+  /* END */
+  .end-screen {
+    text-align: center;
+    padding: 40px 20px;
+    background: #16213e;
+    border-radius: 14px;
+  }
+  .end-screen h2 { color: #c9a96e; margin-bottom: 10px; font-size: 1.5rem; }
+  .end-screen .big-num { font-size: 3rem; color: #7ec8a0; font-weight: 700; }
+  .end-screen p { color: #888; margin: 8px 0; font-size: 0.88rem; }
+  .btn-restart {
+    margin-top: 20px;
+    background: #c9a96e; color: #1a1a2e;
+    border: none; border-radius: 8px;
+    padding: 10px 28px;
+    font-size: 0.92rem; font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-restart:hover { opacity: 0.85; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📖 Campus Bayern III – Vokabeln</h1>
+  <p class="subtitle">Lateinvokabeln Kapitel 1–97 · 1430 Einträge</p>
+
+  <!-- CONTROLS -->
+  <div class="controls" id="controlsPanel">
+    <div class="ctrl-row">
+      <div class="ctrl-group">
+        <label>Kapitel von – bis</label>
+        <div class="range-row">
+          <input type="number" id="chapterFrom" value="1" min="1" max="97">
+          <span class="dash">–</span>
+          <input type="number" id="chapterTo" value="97" min="1" max="97">
+        </div>
+      </div>
+      <div class="ctrl-group">
+        <label>Anzahl Karten</label>
+        <input type="number" id="countInput" value="20" min="5" max="1430">
+      </div>
+      <button class="btn-start" id="btnStart">▶ Starten</button>
+    </div>
+  </div>
+
+  <!-- TRAINER -->
+  <div id="trainerArea" class="hidden">
+    <div class="stats-bar">
+      <span>Karte <b id="statCurrent">0</b> / <b id="statTotal">0</b></span>
+      <span>Gewusst <b id="statKnew">0</b></span>
+      <span>Wiederholungen <b id="statRepeat">0</b></span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+    <div class="card-wrap" id="cardWrap" onclick="flipCard()">
+      <div class="card" id="card">
+        <div class="card-front">
+          <div class="card-label">Lateinisch</div>
+          <div class="repeat-badge" id="repeatBadge">↻ Wiederholung</div>
+          <div class="card-lemma" id="frontText"></div>
+          <div class="flip-hint">Klick zum Umdrehen ▼</div>
+        </div>
+        <div class="card-back">
+          <div class="card-label">Deutsch</div>
+          <div class="card-translation" id="backText"></div>
+          <div class="card-chapters" id="backChapters"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row" id="btnRow">
+      <button class="btn-action btn-didnt" onclick="answer(false)">✗ Nicht gewusst</button>
+      <button class="btn-action btn-knew" onclick="answer(true)">✓ Gewusst</button>
+    </div>
+  </div>
+
+  <!-- END -->
+  <div id="endScreen" class="hidden end-screen">
+    <h2>🎉 Runde beendet</h2>
+    <div class="big-num" id="endPercent">0%</div>
+    <p id="endKnew"></p>
+    <p id="endRepeat"></p>
+    <button class="btn-restart" onclick="restart()">↺ Erneut starten</button>
+  </div>
+</div>
+
+<script>
+const VOCAB = [["ā / ab", "von, von … her", [16]], ["ā basilicā", "von der Markthalle (her)", [16]], ["ā iuventūte", "von Jugend an", [40]], ["ab oppidō", "von der Stadt (her)", [16]], ["abesse, absum, āfuī", "entfernt sein, abwesend sein, fehlen", [68]], ["abīre, abeō, abiī", "weggehen", [37]], ["ac / atque", "und, und auch; im Vergleich: wie, als", [47, 89]], ["accēdere, accēdō, accessī, accessum", "herbeikommen, hinzukommen", [80]], ["accendere, accendō, accendī, accēnsum", "anzünden, anfeuern", [91]], ["accidere, accidō, accidī", "geschehen, sich ereignen", [49]], ["accipere, accipiō, accēpī, acceptum", "erhalten, erfahren, annehmen", [34, 57]], ["accūsāre, accūsō", "anklagen, beschuldigen", [33]], ["ācer, ācris, ācre", "energisch, heftig, scharf", [32]], ["ācerbus, a, um", "bitter, grausam, rücksichtslos", [57]], ["actiō, actiōnis", "Tätigkeit; Gerichtsverhandlung; Rede", [89]], ["ad", "zu, bei, nach, an (mit Akk.)", [12]], ["addere, addō, addidī", "hinzufügen", [43]], ["addūcere, addūcō, addūxī, adductum", "heranführen, veranlassen", [23, 55]], ["adeō", "so sehr", [91]], ["adesse, adsum, adfuī", "da sein, helfen", [18]], ["adhūc", "bis jetzt, noch", [3]], ["adīre, adeō, adiī", "herantreten (an), bitten, aufsuchen", [37]], ["aditus, aditūs", "Zugang, Eingang", [81]], ["admittere, admittō, admīsī, admissum", "hinzuziehen, zulassen", [91]], ["adoptāre", "adoptieren, in seine Familie aufnehmen", [89]], ["adulēscēns, adulēscentis", "jung; junger Mann", [77]], ["adventus, adventūs", "Ankunft", [92]], ["adversus", "gegen (mit Akk.)", [59]], ["aedificāre, aedificō", "bauen", [11]], ["aedificium", "Gebäude", [11]], ["aedis, aedis", "Tempel; Haus (Pl.)", [77]], ["Aenēās, Aenēae", "Äneas (Trojaner und Stammvater der Römer)", [30]], ["Aeolus", "Äolus (Gott der Winde)", [6]], ["aequor, aequoris", "Ebene, Fläche, Meer", [92]], ["aequus, a, um", "eben, gleich, gerecht", [75]], ["aēr, āeris", "Luft", [55]], ["aes, aeris", "Erz, Geld", [69]], ["aes aliēnum", "Schulden", [69]], ["aestās, aestātis", "Sommer", [23]], ["aestimāre, aestimō", "einschätzen, beurteilen", [56]], ["aestus, aestūs", "Hitze, Flut", [92]], ["aetās, aetātis", "Lebensalter, Zeit, Zeitalter", [90]], ["aeternus, a, um", "ewig", [60]], ["Aetna", "Ätna (Vulkan auf Sizilien)", [10]], ["afferre, afferō, attulī, allātum", "bringen, herbeibringen; melden", [70]], ["afficere, afficiō, affēcī, affectum", "versehen mit etw.; bestrafen; hinrichten lassen", [79]], ["ager, agrī", "Acker, Feld, Gebiet", [15]], ["agere, agō, ēgī, āctum", "handeln, treiben, verhandeln", [92]], ["aggrēdī, aggredior, aggressus sum", "angreifen, herangehen", [86]], ["agitāre, agitō", "betreiben, überlegen", [89]], ["agmen, agminis", "Heer, Zug, Marsch", [44]], ["aiō", "behaupte(te) ich, sag(t)e ich", [72]], ["alere, alō, aluī", "ernähren, großziehen", [42]], ["Alexander, Alexandrī", "Alexander der Große", [38]], ["aliēnus, a, um", "fremd", [66]], ["aliquī, aliqua, aliquod", "(irgend)ein", [71]], ["aliquis, aliquid", "(irgend)jemand, (irgend)etwas", [71]], ["alter", "der eine / der andere (von zweien)", [61]], ["alius, alia, aliud", "ein anderer", [29]], ["alius … alius", "der eine … der andere", [48]], ["Alpēs, Alpium", "die Alpen", [44]], ["alter … alter", "der eine … der andere", [86]], ["altus, a, um", "hoch, tief", [25]], ["amāre, amō", "lieben", [8]], ["ambītiō, ambītiōnis", "Ehrgeiz", [88]], ["ambō, ambae, ambō", "beide (zusammen)", [53]], ["amīca", "Freundin", [2]], ["amīcitia", "Freundschaft", [43]], ["amīcus", "Freund", [4]], ["āmittere, āmittō, āmīsī", "aufgeben, verlieren", [23, 27]], ["amor, amōris", "Liebe", [19]], ["amphitheātrum", "Amphitheater", [22]], ["amplus, a, um", "bedeutend, groß, weit", [93]], ["Amulius", "Amulius (König von Alba, Bruder des Numitor)", [33]], ["an", "(im Fragesatz) oder (etwa)", [24]], ["an", "(im indirekten Fragesatz) ob nicht", [93]], ["ancora", "Anker", [92]], ["anima", "Atem, Leben, Seele", [87]], ["animadvertere, animadvertō, animadvertī, animadversum", "bemerken; vorgehen gegen", [29, 54, 61]], ["animal, animālis", "Lebewesen, Tier", [51]], ["animus", "Geist, Mut, Gesinnung", [19]], ["annus", "Jahr", [22]], ["ante", "vor (mit Akk.)", [12]], ["anteā", "vorher, früher", [24]], ["Antigona", "Antigone (Tochter des Ödipus)", [61]], ["antīquus, a, um", "alt, altertümlich", [15]], ["aperīre, aperiō, aperuī", "aufdecken, öffnen", [36]], ["apertus, a, um", "offen, offenkundig", [43]], ["Apollo, Apollinis", "Apollo (Gott der Künste)", [56]], ["appellāre, appellō", "anrufen, anreden; nennen", [56]], ["appetere, appetō, appetīvī", "erstreben, haben wollen; angreifen", [36]], ["apud", "bei (mit Akk.)", [18]], ["aqua", "Wasser", [6]], ["āra", "Altar", [43]], ["arbitrārī, arbitror, arbitrātus sum", "glauben, meinen", [85]], ["arbor, arboris", "Baum", [39]], ["arcessere, arcessō, arcessīvī, arcessītum", "herbeirufen, holen", [35, 47]], ["ārdēre, ārdeō, ārsī, ārsūrum", "brennen", [91]], ["arēna", "Sand, Kampfplatz", [38]], ["argentum", "Silber, Geld", [45]], ["Aristotelēs, Aristotelis", "Aristoteles (griechischer Philosoph)", [39]], ["arma, armōrum", "Gerät, Waffen", [26]], ["ars, artis", "Kunst, Fertigkeit, Eigenschaft", [68]], ["artificium", "das Kunstwerk; die Kunstfertigkeit", [72]], ["arx, arcis", "Burg", [42]], ["asper, aspera, asperum", "rau, streng", [70]], ["aspicere, aspiciō, aspexī, aspectum", "erblicken, ansehen", [17, 33, 54]], ["at", "aber, dagegen, jedoch", [54]], ["Athēnae, Athēnārum", "Athen", [40]], ["atque / ac", "und, und auch; im Vergleich: wie, als", [47, 89]], ["attingere, attingō, attigī, attāctum", "berühren", [76]], ["auctor, auctōris", "Anführer, Gründer, Schriftsteller, Verfasser", [39]], ["auctoritās, auctōritātis", "Ansehen, Einfluss, Macht", [48]], ["audācia", "Frechheit, Kühnheit", [31]], ["audēre, audeō, ausus sum", "wagen", [97]], ["audīre, audiō", "hören", [10]], ["auferre, auferō, abstulī, ablātum", "wegbringen, rauben", [84]], ["augēre, augeō, auxī, auctum", "vergrößern, vermehren", [3, 28, 64]], ["Augiās", "Augias (mythischer König)", [27]], ["Augustō absente", "in Abwesenheit von Augustus", [65]], ["Augustō auctōre", "auf Veranlassung des Augustus", [65]], ["Augustus", "Augustus (erster römischer Kaiser)", [63]], ["aureus, a, um", "golden, aus Gold", [46]], ["auris, auris", "Ohr", [60]], ["aurum", "Gold", [67]], ["aut", "oder", [44]], ["aut … aut", "entweder … oder", [81]], ["autem", "aber, andererseits (nachgestellt)", [15]], ["auxilium", "Hilfe", [15]], ["avaritia", "Geiz, Habsucht", [92]], ["Aventīnus", "der Aventin (Hügel Roms)", [34]], ["āvertere, āvertō, āvertī", "abwenden, vertreiben", [42]], ["avus", "Großvater", [1]], ["barbarus, a, um", "ausländisch, unzivilisiert; Barbar", [40]], ["basilica", "Markthalle, Gerichtshalle", [12]], ["beātus, a, um", "glücklich, reich", [36]], ["bellum", "Krieg", [29]], ["bellum gerere", "Krieg führen", [29]], ["bene", "gut", [4]], ["beneficium", "Wohltat", [11]], ["bēstia", "(wildes) Tier", [21]], ["bibere, bibō, bibī", "trinken", [16, 32]], ["bibliothēca", "die Bibliothek", [84]], ["bonus, a, um", "gut, tüchtig", [14]], ["brevī (tempore)", "nach kurzer Zeit, bald (darauf)", [58]], ["brevis, e", "kurz", [58]], ["cadere, cadō, cecidī", "fallen", [26, 28]], ["caedere, caedō, cecīdī", "fällen, töten", [31]], ["caedēs, caedis", "Mord, Blutbad", [94]], ["caelum", "Himmel", [21]], ["Caesar, Caesaris", "Gaius Julius Caesar (römischer Politiker, Feldherr und Schriftsteller)", [51]], ["Caesare invītō", "gegen den Willen Cäsars", [65]], ["calamitās, calamitātis", "Schaden, Unglück", [54]], ["callidus, a, um", "schlau, geschickt", [75]], ["Campānia", "Kampanien (Landschaft südlich von Rom)", [16]], ["campus", "Feld, freier Platz", [1]], ["cantāre, cantō", "singen, dichten", [50]], ["capere, capiō, cēpī, captum", "fassen, nehmen, fangen; erobern", [17, 27, 48]], ["Capitōlium", "das Kapitol (bedeutendster Hügel Roms)", [11]], ["captīvus", "Kriegsgefangener", [9]], ["caput, capitis", "Kopf; Hauptstadt", [51]], ["carēre, careō", "frei sein von, ohne (etwas) sein", [28]], ["carmen, carminis", "Gedicht, Lied", [50]], ["carpere, carpō, carpsī, carptum", "pflücken, genießen, nutzen", [82]], ["carrus", "Wagen, Karren", [16]], ["Carthāgō, Carthāginis", "Karthago (Stadt in Nordafrika)", [30]], ["cārus, a, um", "lieb, teuer, wertvoll", [20]], ["castra, castrōrum", "Lager", [26]], ["cāsus, cāsūs", "Fall, Zufall", [71]], ["causa", "Sache, Ursache, Grund; Prozess", [53]], ["causās agere", "Prozesse führen", [86]], ["cavēre, caveō, cāvī, cautum", "sich hüten (vor), Vorsorge treffen", [76]], ["cēdere, cēdō, cessī", "gehen, nachgeben, weichen", [29]], ["celer, celeris, celere", "schnell", [32]], ["celeritas, celeritātis", "Schnelligkeit", [97]], ["cēna", "Mahlzeit, Essen", [8]], ["cēnāre, cēnō", "essen", [9]], ["cēnsēre, cēnseō, cēnsuī", "meinen, einschätzen; seine Stimme abgeben (für)", [40]], ["centum", "hundert", [46]], ["Cerberus", "Zerberus (dreiköpfiger Höllenhund)", [28]], ["cernere, cernō", "sehen, bemerken", [71]], ["certē / certō", "gewiss, sicherlich", [29]], ["certus, a, um", "sicher, bestimmt", [49]], ["cessāre, cessō", "zögern, rasten", [64]], ["cēterī, ae, a", "die übrigen", [21]], ["cēterum", "übrigens, im Übrigen", [79]], ["Chrīstiānus, a, um", "christlich; Christ", [80]], ["cibus", "Nahrung, Speise, Futter", [6]], ["circiter", "ungefähr", [46]], ["circum", "rings um, um … herum (mit Akk.)", [31]], ["circumdāre, circumdō, circumdedī, circumdatum", "umgeben", [59]], ["cīvis, cīvis", "Bürger", [30]], ["cīvitās, cīvitātis", "Gemeinde, Staat; Bürgerrecht", [20, 67]], ["clādēs, clādis", "Niederlage, Unglück", [73]], ["clāmāre, clāmō", "laut rufen, schreien", [13]], ["clāmor, clāmōris", "Geschrei, Lärm", [19]], ["clārus, a, um", "klar, hell, berühmt", [15]], ["classis, classis", "Abteilung, Flotte", [42]], ["claudere, claudō, clausī", "schließen, abschließen, einschließen", [38]], ["Cleopatra", "Kleopatra (Königin von Ägypten)", [53]], ["clēmentia", "Milde, Nachsicht", [9]], ["cōgere, cōgō, coēgī, coāctum", "(ver)sammeln, zwingen", [39, 75]], ["cōgitāre, cōgitō", "denken, beabsichtigen", [30]], ["cognōscere, cognōscō, cognōvī, cognitum", "erkennen, kennenlernen; wissen", [39, 63, 95]], ["cohors, cohortis", "Kohorte (ca. 600 Mann)", [51]], ["colere, colō, coluī, cultum", "bewirtschaften, pflegen; verehren", [64]], ["colligere, colligō, collēgī, collēctum", "sammeln", [79]], ["collocāre, collocō", "aufstellen, unterbringen", [38]], ["colloquī, colloquor, collocūtus sum", "sich unterhalten; verhandeln, besprechen", [87]], ["collum", "Hals", [93]], ["comes, comitis", "Begleiter, Gefährte", [32]], ["committere, committō, commīsī, commissum", "anvertrauen; veranstalten; zustande bringen", [77]], ["commodum", "Bequemlichkeit, Vorteil", [66]], ["Commodus", "Commodus (Sohn des Mark Aurel, römischer Kaiser)", [81]], ["commovēre, commoveō, commōvī, commōtum", "bewegen, veranlassen", [57]], ["commūnis, e", "gemeinsam, allgemein", [35]], ["comparāre, comparō", "vergleichen", [72]], ["comperīre, comperiō, comperī, compertum", "(genau) erfahren", [60]], ["complēre, compleō, complēvī", "anfüllen, auffüllen", [6, 25]], ["complūrēs, complūra", "mehrere", [46]], ["compōnere, compōnō, composuī, compositum", "verfassen, ordnen, schlichten; vergleichen", [75]], ["comprehendere, comprehendō, comprehendī, comprehēnsum", "begreifen, ergreifen, festnehmen", [24, 27, 48]], ["cōnārī, cōnor, cōnātus sum", "versuchen", [87]], ["concēdere, concēdō, concessī", "erlauben, nachgeben, zugestehen", [36]], ["Concordia", "Concordia (Göttin der Eintracht)", [11]], ["concordia", "Eintracht, Einigkeit", [37]], ["condere, condō, condidī, conditum", "verwahren, verbergen; erbauen, gründen", [34, 55]], ["condiciō, condiciōnis", "Bedingung, Lage", [57]], ["cōnferre, cōnferō, contulī, collātum", "vergleichen, zusammentragen", [70]], ["cōnficere, cōnficiō, cōnfēcī, cōnfectum", "fertig machen, beenden", [44, 63]], ["cōnfīdere, cōnfīdō, cōnfīsus sum", "vertrauen", [97]], ["cōnfirmāre, cōnfirmō", "bekräftigen, ermutigen, stärken", [37]], ["cōnfiterī, cōnfiteor, cōnfessus sum", "(ein)gestehen", [89]], ["cōnicere, cōniciō, cōniēcī, cōniectum", "(zusammen)werfen; folgern, vermuten", [38]], ["coniūnx, coniugis", "Gatte, Gattin", [57]], ["coniūrātiō, coniūrātiōnis", "Verschwörung", [80]], ["coniūrāre, coniūrō", "sich verschwören", [68]], ["cōnscrībere, cōnscrībō, cōnscrīpsī", "aufschreiben, verfassen", [39]], ["cōnsequī, cōnsequor, cōnsecūtus sum", "erreichen, nachfolgen", [86]], ["cōnservāre, cōnservō", "retten (vor), bewahren", [80]], ["cōnsīdere, cōnsīdō, cōnsēdī", "sich setzen, sich niederlassen", [54]], ["cōnsilium", "Beratung, Beschluss, Plan, Rat", [11]], ["cōnsistere, cōnsistō, cōnstitī", "stehen bleiben, haltmachen, sich aufstellen", [17, 29]], ["cōnspectus, cōnspectūs", "Anblick, Blickfeld", [64]], ["cōnspicere, cōnspiciō, cōnspexī", "erblicken", [38]], ["Cōnstantīnus", "Konstantin der Große (römischer Kaiser)", [83]], ["cōnstāre, cōnstō, cōnstitī", "bestehen aus", [71]], ["cōnstat", "es ist bekannt, es steht fest", [29]], ["cōnstituere, cōnstituō, cōnstituī, cōnstitūtum", "festsetzen, beschließen", [54]], ["cōnsuēscere, cōnsuēscō, cōnsuēvī", "sich daran gewöhnen; gewohnt sein", [89, 95]], ["cōnsul", "Konsul", [42]], ["cōnsulere, cōnsulō, cōnsuluī, cōnsultum", "um Rat fragen; sorgen für; vorgehen gegen", [53]], ["cōnsūmere, cōnsūmō, cōnsūmpsī, cōnsūmptum", "verbrauchen, verwenden", [82]], ["contendere, contendō, contendī", "sich anstrengen, kämpfen; eilen; behaupten", [34]], ["contentus, a, um", "zufrieden", [88]], ["continēre, continēō, continuī, contentum", "festhalten, enthalten", [94]], ["contingere, contingō, contigī, contāctum", "berühren; gelingen", [74]], ["contrā", "gegen (Präp. mit Akk.); gegenüber, dagegen (Adv.)", [38, 83]], ["contrōversia", "Streit", [94]], ["convenīre, conveniō, convēnī", "zusammenkommen, zusammenpassen, besuchen", [30]], ["convertere, convertō, convertī, conversum", "verändern, (um)wenden", [59]], ["convīvium", "Gastmahl, Gelage", [80]], ["convocāre, convocō", "zusammenrufen, versammeln", [38]], ["cōpia", "Menge, Vorrat; Pl. Truppen", [6, 35]], ["cor, cordis", "Herz", [89]], ["Corinthus", "Korinth (Stadt in Griechenland)", [59]], ["corpus, corporis", "Körper, Leichnam", [49]], ["corripere, corripiō, corripuī, correptum", "gewaltsam an sich reißen", [66]], ["corrumpere, corrumpō, corrūpī, corruptum", "bestechen, verderben, verleiten", [75]], ["creāre, creō", "erschaffen, wählen", [18]], ["crēber, crēbra, crēbrum", "häufig, zahlreich", [97]], ["crēdō, crēdere, crēdidī", "glauben, anvertrauen", [35]], ["crēscere, crēscō, crēvī", "wachsen", [70]], ["Crēta", "Kreta (Insel im Mittelmeer)", [10]], ["crīmen, crīminis", "Verbrechen, Vorwurf, Beschuldigung", [50]], ["Croesus", "Krösus (König von Lydien)", [72]], ["crūdēlis, e", "grausam", [33]], ["crux, crucis", "Kreuz", [78]], ["cui?", "wem?", [5]], ["culpa", "Schuld", [69]], ["cultus, cultūs", "Bildung, Lebensweise, Pflege, Verehrung", [61]], ["cum", "mit, zusammen mit (Präp. mit Abl.)", [12]], ["cum", "als (plötzlich); (immer) wenn (Subj. mit Ind.)", [25]], ["cum", "als, nachdem; weil; obwohl (Subj. mit Konj.)", [61, 74]], ["cūnctī, ae, a", "alle (zusammen)", [14]], ["cupere, cupiō, cupīvī", "wünschen, verlangen", [43]], ["cupiditās, cupiditātis", "(heftiges) Verlangen, Leidenschaft", [74]], ["cupidus, a, um", "(be)gierig (nach)", [71]], ["cūr?", "warum?", [2]], ["cūra", "Pflege, Sorge", [36]], ["cūrāre, cūrō", "pflegen, sorgen für", [24]], ["cūria", "Kurie (Sitzungsgebäude des Senats)", [11]], ["currere, currō, cucurrī", "laufen, eilen", [44]], ["currus, currūs", "Wagen", [97]], ["cursus, cursūs", "Lauf", [71]], ["cūstōs, cūstōdis", "Wächter(in)", [42]], ["cūstōdia", "Gefängnis, Haft, Wache", [77]], ["Daedalus", "Dädalus (berühmter Erfinder aus Athen)", [55]], ["damnāre, damnō", "verurteilen (wegen)", [46]], ["dare, dō, dedī, datum", "geben", [20, 28, 47]], ["dē", "von, von … her, von … weg; über (Präp. mit Abl.)", [14]], ["dēbēre, dēbeō, dēbuī, dēbitum", "müssen, sollen, schulden", [2, 58]], ["decem", "zehn", [14]], ["dēcernere, dēcernō, dēcrēvī", "beschließen, entscheiden", [39]], ["decimus, a, um", "der zehnte", [23]], ["dēdūcere, dēdūcō, dēdūxī, dēductum", "wegführen, hinführen", [23, 54]], ["dēesse, dēsum, dēfuī", "abwesend sein, fehlen", [23]], ["dēfendere, dēfendō, dēfendī, dēfēnsum", "abwehren, verteidigen (vor / gegen)", [33, 81]], ["dēferre, dēferō, dētulī, dēlātum", "hinbringen, melden, übertragen", [70]], ["dēficere, dēficiō, dēfēcī, dēfectum", "abnehmen, ermatten, abfallen (von)", [67]], ["deinde", "dann, hierauf", [65]], ["dēlectāre, dēlectō", "erfreuen, unterhalten", [8]], ["dēlētum", "zerstören, vernichten", [25]], ["dēligere, dēligō, dēlēgī, dēlēctum", "(aus)wählen", [34, 56]], ["dēmōnstrāre, dēmōnstrō", "beweisen, darlegen", [31]], ["dēmum", "endlich, erst", [72]], ["dēnique", "schließlich, zuletzt", [65]], ["dēpōnere, dēpōnō, dēposuī, dēpositum", "niederlegen, aufgeben", [61]], ["dēscendere, dēscendō, dēscendī", "herabsteigen", [17, 27]], ["dēserere, dēserō, dēseruī", "im Stich lassen, verlassen", [42]], ["dēsīderāre, dēsīderō", "sich sehnen nach, vermissen", [10]], ["dēsinere, dēsinō, dēsīī", "aufhören", [42]], ["dēspērāre, dēspērō", "die Hoffnung aufgeben, verzweifeln", [31]], ["deus", "Gott, Gottheit", [6]], ["dexter, dext(e)ra, dext(e)rum", "rechts", [43]], ["dīc!", "sag! sprich!", [26]], ["dīcere, dīcō, dīxī, dictum", "sagen, sprechen; nennen, bezeichnen (als)", [16, 27, 56]], ["dictum", "Ausspruch, Wort", [82]], ["Dīdō, Dīdōnis", "Dido (Königin Karthagos)", [30]], ["diēs, diēī", "Tag", [41]], ["differre, differō, distulī, dīlātum", "aufschieben; sich unterscheiden (von)", [70]], ["difficilis, e", "schwer, schwierig", [68]], ["dīgnitās, dīgnitātis", "Ansehen, Würde; (gesellschaftliche) Stellung", [83]], ["dīgnus, a, um", "wert, würdig (einer Sache)", [56]], ["dīligēns, dīligentis", "gewissenhaft, sorgfältig", [38]], ["dīligere, dīligō, dīlēxī, dīlēctum", "hochachten, lieben", [78]], ["dīmittere, dīmittō, dīmīsī, dīmissum", "aufgeben, entlassen", [61]], ["Dioclētiānus", "Diokletian (römischer Kaiser)", [82]], ["Diogenēs, Diogenis", "Diogenes (griechischer Philosoph)", [39]], ["discēdere, discēdō, discessī, discessum", "auseinandergehen, weggehen", [84]], ["discere, discō, didicī", "lernen, erfahren", [42]], ["discipulus", "Schüler", [11]], ["diū", "lange (Zeit)", [7]], ["dīversus, a, um", "verschieden, entgegengesetzt, feindlich", [83]], ["dīves, dīvitis", "reich", [38]], ["dīvidere, dīvidō, dīvīsī, dīvīsum", "teilen, trennen", [94]], ["dīvīnus, a, um", "göttlich", [75]], ["dīvitiae, dīvitiārum", "Reichtum", [72]], ["dīvūs, a, um", "göttlich", [82]], ["docēre, doceō, docuī, doctum", "lehren, unterrichten", [3, 96]], ["doctus, a, um", "gelehrt, gebildet", [71]], ["dolēre, doleō", "schmerzen, wehtun; traurig sein", [2, 28]], ["dolor, dolōris", "Schmerz", [22]], ["dolus", "List, Täuschung", [9]], ["domī", "zu Hause, daheim", [73]], ["domina", "Herrin, Dame", [8]], ["dominus", "Herr", [3]], ["domus, domūs", "Haus; zu Hause, daheim", [53, 73]], ["dōnāre, dōnō", "schenken, beschenken", [31]], ["dōnum", "Geschenk", [11]], ["dubitāre, dubitō", "zweifeln; zögern", [9]], ["dūc!", "führe!", [26]], ["ducentī, ae, a", "zweihundert", [51]], ["dūcere, dūcō, dūxī, ductum", "führen, ziehen; halten für", [16, 27, 48, 56]], ["dulcis, e", "angenehm, süß", [33]], ["dum", "während; solange, bis", [19]], ["duo, duae, duo", "zwei; beide", [16]], ["duodecim", "zwölf", [27]], ["dūrus, a, um", "hart, hartherzig", [76]], ["dux, ducis", "Anführer(in)", [47]], ["ē / ex", "aus, von … her (Präp. mit Abl.)", [12]], ["ecce", "schau! sieh da!", [22]], ["ēdere, ēdō, ēdidī, ēditum", "herausgeben, bekannt machen; veranstalten", [69]], ["ēdūcere, ēdūcō", "herausführen", [23]], ["efferre, efferō, extulī, ēlātum", "herausheben, hervorbringen", [70]], ["efficere, efficiō, effēcī, effectum", "bewirken, herstellen", [42, 85]], ["effugere, effugiō, effūgī", "entfliehen, entkommen", [58]], ["ego", "ich (betont)", [13]], ["ēgredī, ēgredior, ēgressus sum", "hinausgehen, verlassen", [87]], ["ēgregius, a, um", "ausgezeichnet, hervorragend", [83]], ["ēicere, ēiciō, ēiēcī, ēiectum", "hinauswerfen, vertreiben", [90]], ["eius modī / eiusmodī", "derartig, so beschaffen", [73]], ["emere, emō, ēmī, ēmptum", "kaufen", [69]], ["enim", "nämlich, denn (nachgestellt)", [18]], ["eō", "dorthin; deswegen", [37]], ["Epicūrus", "Epikur (griechischer Philosoph)", [82]], ["epistula", "Brief", [74]], ["equidem", "ich allerdings, freilich", [64]], ["equus", "Pferd", [1]], ["ergō", "also, deshalb", [34]], ["errāre, errō", "umherirren; sich irren", [13]], ["esse, sum, fuī, futūrus", "sein; sich befinden", [2, 25, 79]], ["et", "und, auch", [1]], ["et … et", "sowohl … als auch", [35]], ["etiam", "auch, sogar", [5]], ["etsī", "auch wenn, obwohl", [28]], ["Eurōpa", "Europa (Erdteil; Gestalt der Sage)", [10, 54]], ["Eurydica", "Eurydike (Gattin des Orpheus)", [57]], ["Eurystheus", "Eurystheus (mythischer König)", [27]], ["ēvenīre, ēveniō, ēvēnī, ēventum", "sich ereignen", [69]], ["ex / ē", "aus, von … her (Präp. mit Abl.)", [12]], ["excipere, excipiō, excēpī, exceptum", "aufnehmen; eine Ausnahme machen", [94]], ["excitāre, excitō", "erregen, ermuntern, wecken", [55]], ["exemplum", "Beispiel, Vorbild", [83]], ["exercēre, exerceō", "üben, trainieren; quälen", [22]], ["exercitus, exercitūs", "Heer", [52]], ["exigere, exigō, exēgī, exāctum", "(ein)fordern, vollenden", [69]], ["exilium", "Verbannung, Exil", [76]], ["exīre, exeō, exiī", "herausgehen, hinausgehen", [37]], ["existimāre, existimō", "meinen, einschätzen", [21]], ["expellere, expellō, expulī, expulsum", "vertreiben, verbannen", [44]], ["experīrī, experior, expertus sum", "erfahren, versuchen", [86]], ["exspectāre, exspectō", "warten (auf), erwarten", [10]], ["exstinguere, exstinguō, exstīnxī, exstīnctum", "auslöschen, vernichten", [67]], ["extrā", "außerhalb (von) (Präp. mit Akk.)", [72]], ["fābula", "Erzählung, Geschichte, Theaterstück", [27]], ["facere, faciō, fēcī, factum", "machen, tun, handeln; zu etw. machen", [17, 27, 48, 56]], ["facile", "leicht", [78]], ["facilis, e", "leicht (zu tun)", [62]], ["facinus, facinoris", "Handlung; Untat", [61]], ["factum", "Handlung, Tat, Tatsache", [26]], ["fallere, fallō, fefellī", "täuschen, betrügen", [40]], ["falsus, a, um", "falsch", [60]], ["fāma", "(guter / schlechter) Ruf, Gerücht", [60]], ["famēs, famis", "Hunger", [80]], ["familia", "Familie", [1]], ["familiāris, e", "freundschaftlich, vertraut; Freund", [80]], ["fateor, fatērī, fassus sum", "bekennen, gestehen", [85]], ["fātum", "Schicksal, Götterspruch", [72]], ["Faustulus", "Faustulus (Hirte, der Romulus und Remus entdeckte)", [32]], ["fēlīx, fēlīcis", "erfolgreich, glückbringend, glücklich", [38]], ["fēmina", "Frau", [62]], ["fenestra", "Fenster", [93]], ["ferē", "fast, beinahe; ungefähr", [86]], ["ferre, ferō, tulī, lātum", "bringen, tragen; ertragen", [70]], ["ferrum", "Eisen; Waffe", [31]], ["ferus, a, um", "wild", [77]], ["fidēs, fideī", "Glaube, Treue, Vertrauen, Zuverlässigkeit", [41]], ["fiducia", "Vertrauen", [65]], ["fierī, fiō, factus sum", "gemacht werden; geschehen; Eigentum werden", [93, 94]], ["fīlia", "Tochter", [7]], ["fīlius", "Sohn", [9]], ["fingere, fingō, fīnxī, fictum", "gestalten, sich ausdenken", [97]], ["fīnis, fīnis", "Ende, Grenze, Ziel, Zweck; Gebiet", [30]], ["flāgitium", "Schandtat, Gemeinheit", [65]], ["flectere, flectō, flexī, flexum", "biegen, lenken, umstimmen", [57]], ["flēre, flēō, flēvī", "weinen, beweinen", [5, 25]], ["flūctus, flūctūs", "Flut, Strömung", [92]], ["flūvius", "Fluss", [6]], ["fōns, fontis", "Quelle, Ursprung", [23]], ["fōrma", "Form, Gestalt, Schönheit", [62]], ["fortis, e", "kräftig, tapfer", [33]], ["fortūna", "Schicksal, Glück", [35]], ["forum", "Forum, Marktplatz", [11]], ["frangere, frangō, frēgī", "zerbrechen (trans.)", [41]], ["frāter, frātris", "Bruder", [20]], ["frequēns, frequentis", "häufig, zahlreich", [60]], ["frūctus, frūctūs", "Frucht, Nutzen, Ertrag", [95]], ["fruī, fruor", "genießen, sich an etwas erfreuen", [86]], ["frūmentum", "Getreide", [11]], ["frūstrā", "vergeblich", [94]], ["fuga", "Flucht", [25]], ["fugere, fugiō, fūgī", "fliehen (vor), meiden", [51]], ["fundere, fundō, fūdī, fūsum", "(aus)gießen, zerstreuen", [50]], ["fūr, fūris", "Dieb", [19]], ["furor, furōris", "Wahnsinn, Wut", [59]], ["furtum", "Diebstahl, Hinterlist", [84]], ["Gallia", "Gallien", [66]], ["Gallō mortuō", "nach dem Tod des Gallus", [65]], ["Gallus, a, um", "gallisch; Gallier", [42]], ["gaudēre, gaudeō, gāvīsus sum", "sich freuen", [28, 97]], ["gaudium", "Freude", [74]], ["gemitus, gemitūs", "Seufzen, Traurigkeit", [52]], ["gēns, gentis", "Familienverband, Stamm, Volk", [47]], ["genus, generis", "Abstammung, Art, Geschlecht", [50]], ["gerere, gerō, gessī, gestum", "ausführen, führen, tragen", [29, 61]], ["Germānia", "Germanien", [68]], ["Germānus, a, um", "germanisch; Germane", [51]], ["gladiātor, gladiātōris", "Gladiator", [22]], ["gladius", "Schwert", [5]], ["glōria", "Ruhm, Ehre", [35]], ["Graecia", "Griechenland", [47]], ["Graecus, a, um", "griechisch; Grieche", [18]], ["grandis, e", "alt; bedeutend, groß", [83]], ["grātia", "Dank", [6]], ["grātiam habēre", "danken, dankbar sein", [6]], ["grātus, a, um", "dankbar, willkommen, beliebt", [82]], ["gravis, e", "schwer", [54]], ["habēre, habeō", "haben, halten", [6]], ["habitāre, habitō", "wohnen, bewohnen", [10]], ["haerēre, haereō, haesī", "hängen, stecken bleiben", [42]], ["Hamilcar, Hamilcaris", "Hamilkar (Vater Hannibals)", [43]], ["Hannibal, Hannibalis", "Hannibal (karthagischer Feldherr)", [43]], ["haud", "nicht", [83]], ["Herculēs, Herculis", "Herkules (sagenhafter Held)", [27]], ["Herc(u)le!", "Beim Herkules!", [85]], ["herī", "gestern", [20]], ["hic", "hier", [3]], ["hic, haec, hoc", "dieser, diese, dieses (hier); folgender", [40]], ["hiems, hiemis", "Winter; Unwetter", [92]], ["hinc", "von hier, hierauf", [94]], ["hodiē", "heute", [11]], ["homō, hominis", "Mensch", [23]], ["honestus, a, um", "ehrenhaft, angesehen", [29]], ["honor, honōris", "Ehre, Ehrenamt", [18]], ["hōra", "Stunde", [14]], ["hortārī, hortor, hortātus sum", "auffordern, ermahnen", [87]], ["hostia", "Opfertier, Schlachtopfer", [50]], ["hostis, hostis", "Feind (Landesfeind)", [35]], ["hūc", "hierher", [47]], ["hūmānitās, hūmānitātis", "Menschlichkeit, Menschenfreundlichkeit; Bildung", [66]], ["hūmānus, a, um", "menschlich; gebildet", [72]], ["iacēre, iaceō", "liegen", [26]], ["iam", "schon, bereits; nun", [4]], ["Iāsōn, Iāsonis", "Jason (Anführer der Argonauten)", [76]], ["ibī", "dort", [3]], ["Icarus", "Ikarus (Sohn des Dädalus)", [55]], ["idem, eadem, idem", "derselbe, der gleiche", [42]], ["īdem ac / atque", "derselbe wie", [89]], ["īdem … quī", "derselbe … wie", [42]], ["idōneus, a, um", "geeignet, passend", [34]], ["igitur", "also, folglich", [52]], ["ignārus, a, um", "ohne Kenntnis, unwissend", [93]], ["ignis, ignis", "Feuer", [82]], ["ignōscere, ignōscō, ignōvī, ignōtum", "verzeihen", [40, 85]], ["ignōtus, a, um", "unbekannt", [45]], ["ille, illa, illud", "jener, jene, jenes; der (dort)", [40]], ["illīc", "dort", [79]], ["illūc", "dahin, dorthin", [79]], ["imāgō, imāginis", "Bild, Abbild", [95]], ["imitārī, imitor, imitātus sum", "nachahmen", [88]], ["immō", "im Gegenteil, ja sogar", [58]], ["immortālis, e", "unsterblich", [43]], ["impedīre, impedīō", "hindern, verhindern", [46]], ["impellere, impellō, impulī, impulsum", "antreiben, veranlassen", [61]], ["imperāre, imperō", "befehlen, herrschen (über)", [9]], ["imperātor, imperātōris", "Befehlshaber, Feldherr, Kaiser", [18]], ["imperium", "Befehl, Herrschaft, Reich", [14]], ["impetrāre, impetrō", "erreichen, durchsetzen", [93]], ["impetus, impetūs", "Angriff, Schwung", [64]], ["impius, a, um", "gottlos, gewissenlos", [61]], ["impōnere, impōnō, imposuī, impositum", "auferlegen, einsetzen", [76]], ["imprīmīs", "besonders, vor allem", [71]], ["improbus, a, um", "schlecht, unanständig", [69]], ["in", "in, an, auf, bei (wo?) (Präp. mit Abl.)", [12]], ["in", "in … hinein, nach (wohin?) (Präp. mit Akk.)", [12, 56]], ["inānis, e", "leer, wertlos", [35]], ["incēdere, incēdō, incessī, incessum", "heranrücken, eintreten; befallen", [85]], ["incendere, incendō, incendī, incēnsum", "entflammen, in Brand stecken", [83]], ["incendium", "Brand, Feuer", [80]], ["incertus, a, um", "ungewiss, unsicher", [69]], ["incipere, incipiō, coepī (incēpī), inceptum", "anfangen, beginnen", [64]], ["incolumis, e", "unverletzt, wohlbehalten", [84]], ["incrēdibilis, e", "unglaublich", [77]], ["inde", "von dort; darauf; deshalb", [69]], ["indicāre, indicō", "anzeigen, melden", [12]], ["indīgnus, a, um", "unwürdig (einer Sache)", [77]], ["īnfelīx, īnfelīcis", "unglücklich", [65]], ["īnferī, īnferōrum", "die Bewohner der Unterwelt; Unterwelt", [58]], ["īnferre, īnferō, intulī, illātum", "hineintragen, zufügen", [70]], ["īnfestus, a, um", "feindlich, feindselig", [93]], ["ingenium", "Begabung, Talent, Verstand", [11]], ["ingēns, ingentis", "gewaltig, ungeheuer", [45]], ["ingredī, ingredior, ingressus sum", "betreten; beginnen", [89]], ["inīquus, a, um", "ungerecht, ungleich", [75]], ["inīre, ineō, iniī, initum", "hineingehen (in), beginnen", [37]], ["initium", "Anfang, Eingang", [74]], ["iniūria", "Unrecht, Beleidigung", [9]], ["iniūstus, a, um", "ungerecht", [90]], ["inquam", "sag(t)e ich", [81]], ["īnsidiae", "Falle, Attentat, Hinterlist", [44]], ["īnstāre, īnstō, īnstitī", "bevorstehen; hart zusetzen; drohen", [65]], ["instituere, instituō, instituī, institūtum", "beginnen, einrichten, unterrichten", [90]], ["īnstruere, īnstruō, īnstrūxī, īnstrūctum", "aufstellen, ausrüsten; unterrichten", [89]], ["īnsula", "Insel; Wohnblock", [7]], ["intellegere, intellegō, intellēxī, intellēctum", "(be)merken, verstehen", [66]], ["inter", "unter, während, zwischen (Präp. mit Akk.)", [39]], ["intereā", "inzwischen, unterdessen", [72]], ["interest, intersum, interfuī", "dazwischen sein; teilnehmen (an)", [91]], ["interest", "es ist wichtig (für jdn.)", [73]], ["interficere, interficiō, interfēcī, interfectum", "töten, vernichten", [22, 27, 49]], ["interrogāre, interrogō", "fragen", [39]], ["intrā", "innerhalb (von) (Präp. mit Akk.)", [42]], ["intrāre, intrō", "betreten, eintreten", [8]], ["intuērī, intueor", "anschauen", [87]], ["intus", "im Inneren, innen", [63]], ["invenīre, inveniō, invēnī, inventum", "finden, erfinden", [13, 27, 48]], ["invidia", "Neid", [82]], ["invītus, a, um", "ungern, gegen den Willen", [60]], ["Iphigeneia", "Iphigenie (Tochter des Agamemnon)", [77]], ["ipse, ipsa, ipsum", "selbst; persönlich; gerade; sogar", [56]], ["īra", "Zorn, Wut", [46]], ["īrāscī, īrāscor", "in Zorn geraten, zornig sein", [93]], ["īre, eō, iī, itum", "gehen", [37]], ["is, ea, id", "dieser, diese, dieses; er, sie, es", [26]], ["iste, ista, istud", "dieser, diese, dieses (da)", [60]], ["istīc", "da, dort", [81]], ["ita", "so", [13]], ["Italia", "Italien", [31]], ["itaque", "deshalb", [5]], ["item", "ebenso, gleichfalls", [67]], ["iter, itineris", "Reise, Marsch, Weg", [44]], ["iterum", "wiederum, zum zweiten Mal", [5]], ["iterum atque iterum", "immer wieder", [65]], ["iubēre, iubeō, iussī, iussum", "anordnen, befehlen", [57]], ["iūcundus, a, um", "angenehm, erfreulich", [82]], ["Iūdaeus, a, um", "jüdisch; Jude", [78]], ["iūdex, iūdicis", "Richter", [46]], ["iūdicāre, iūdicō", "urteilen, beurteilen", [72]], ["iūdicium", "Gericht, Urteil", [91]], ["iungere, iungō, iūnxī, iūnctum", "verbinden, vereinigen", [77]], ["Iūnō, Iūnōnis", "Juno (Ehefrau des Jupiter)", [50]], ["Iuppiter, Iovis", "Jupiter (höchster Gott der Römer)", [21]], ["iūrāre, iūrō", "schwören", [43]], ["iūris cōnsultus", "Rechtsgelehrter", [94]], ["iūs, iūris", "Recht", [77]], ["iūstitia", "Gerechtigkeit", [90]], ["iūstus, a, um", "gerecht", [90]], ["iuvāre, iuvō, iūvī", "unterstützen, helfen; erfreuen", [53]], ["iuvenis, iuvenis", "junger Mann; jung", [32]], ["iuventūs, iuventūtis", "Jugend", [40]], ["labor, labōris", "Arbeit, Anstrengung", [27]], ["labōrāre, labōrō", "arbeiten; sich anstrengen; leiden an", [8, 28]], ["lacrima", "Träne", [7]], ["laedere, laedō, laesī, laesum", "beschädigen, verletzen, beleidigen", [48]], ["laetitia", "Freude", [7]], ["laetus, a, um", "froh; fruchtbar", [52]], ["Laocoōn, Laocoontis", "Laokoon (trojanischer Priester)", [29]], ["latēre, lateō", "verborgen sein", [5]], ["Latīnī, Latīnōrum", "die Latiner (Volksstamm in Italien)", [31]], ["Latīnus", "Latinus (König der Latiner)", [31]], ["Latōna", "Latona (römische Göttin)", [56]], ["lātus, a, um", "breit, ausgedehnt", [55]], ["laudāre, laudō", "loben", [8]], ["laus, laudis", "Lob, Ruhm", [93]], ["lēgātiō, lēgātiōnis", "Gesandtschaft", [79]], ["lēgātus", "Gesandter, Bevollmächtigter", [40]], ["legere, legō, lēgī, lēctum", "lesen; auswählen", [62]], ["legiō, legiōnis", "Legion (ca. 5000–6000 Mann)", [51]], ["leō, leōnis", "Löwe", [23]], ["levis, e", "leicht, leichtsinnig", [78]], ["lēx, lēgis", "Gesetz, Bedingung", [36]], ["libellus", "kleines Buch, Heft", [39]], ["libenter", "gerne", [8]], ["liber, librī", "Buch", [62]], ["līber, lībera, līberum", "frei; frei von", [15, 28]], ["līberāre, līberō", "befreien, freilassen", [13]], ["līberī, līberōrum", "Kinder", [26]], ["lībertās, lībertātis", "Freiheit", [20]], ["licet", "es ist erlaubt, es ist möglich", [18]], ["licentia", "Freiheit, Willkür", [91]], ["līmes, līmitis", "Grenze; Limes", [79]], ["lingua", "Sprache, Rede", [3]], ["littera", "Buchstabe; Brief; Literatur, Wissenschaft", [95]], ["lītus, lītoris", "Küste, Strand", [54]], ["Līvius", "Titus Livius (römischer Geschichtsschreiber)", [34]], ["locāre, locō", "aufstellen; vermieten", [68]], ["locus", "Ort, Platz, Stelle", [33]], ["longus, a, um", "lang, weit", [50]], ["loquī, loquor, locūtus sum", "reden, sprechen", [86]], ["lūdus", "Spiel; Schule", [10]], ["lūx, lūcis", "Licht, Tageslicht", [25]], ["luxuria", "Luxus, Prunk", [62]], ["Macedonēs, Macedonum", "die Makedonen", [39]], ["magis", "mehr", [17]], ["magnō", "(um) viel mehr", [96]], ["magis … quam", "mehr … als", [17]], ["magister, magistrī", "Lehrer, Meister", [15]], ["magistrātus, magistrātūs", "Amt, Beamter", [69]], ["magnitūdō, magnitūdinis", "Größe", [23]], ["magnus, a, um", "groß, bedeutend", [14]], ["maior, maius", "größer", [74]], ["māiōrēs, māiōrum", "Vorfahren", [78]], ["malle, mālō, māluī", "lieber wollen", [19, 25]], ["malum", "Leid, Böses, Unglück", [40]], ["malus, a, um", "schlecht, schlimm", [24]], ["manēre, maneō, mānsī", "bleiben; erwarten", [12, 27]], ["manifestus, a, um", "offenkundig; überführt", [89]], ["manus, manūs", "Hand; Schar (von Bewaffneten)", [52]], ["Mārcus Antōnius", "Marcus Antonius (römischer Politiker und Feldherr)", [62]], ["Mārcus Aurēlius", "Mark Aurel (römischer Kaiser)", [81]], ["mare, maris", "Meer", [51]], ["marītus", "Ehemann", [30]], ["Mārs, Mārtis", "Mars (römischer Kriegsgott)", [58]], ["māter, mātris", "Mutter", [20]], ["Maxentius", "Maxentius (römischer Kaiser)", [83]], ["maximē", "am meisten, besonders", [34]], ["maximus, a, um", "der größte, sehr groß", [39]], ["mē", "mich", [13]], ["meā rēfert", "es ist wichtig für mich", [75]], ["mēcum", "mit mir", [13]], ["Mēdea", "Medea (mythische Zauberin)", [76]], ["medicus", "Arzt", [93]], ["medius, a, um", "der mittlere; in der Mitte (von)", [53]], ["melior, melius", "besser", [74]], ["membrum", "Glied, (Körper-)Teil", [81]], ["meminisse, meminī", "sich erinnern an; daran denken", [95]], ["memor, memoris", "in Erinnerung an", [79]], ["memorāre, memorō", "erwähnen, sagen", [85]], ["memoria", "Erinnerung, Gedächtnis; Zeit", [62]], ["mēns, mentis", "Geist, Sinn, Verstand; Meinung", [67]], ["mēnsa", "(Ess-)Tisch", [8]], ["mercātor, mercātōris", "Kaufmann, Händler", [18]], ["mercēs, mercēdis", "Lohn", [94]], ["Mercurius", "Merkur (Götterbote)", [21]], ["merīdiēs", "der Mittag; der Süden", [71]], ["metuere, metuō, metuī", "(sich) fürchten", [60]], ["metus, metūs", "Angst", [52]], ["meus, a, um", "mein", [14]], ["mihi", "mir", [13]], ["mīles, mīlitis", "Soldat", [32]], ["mīlitāris, e", "militärisch, Kriegs-", [68, 80]], ["mīlle", "tausend", [51]], ["mīlia", "tausend, Tausende", [51]], ["Minerva", "Minerva (Göttin der Weisheit)", [21]], ["minimē", "am wenigsten, überhaupt nicht", [70]], ["minimus, a, um", "der kleinste, der geringste", [72]], ["minor, minus", "kleiner, geringer", [74]], ["minus", "weniger, nicht sehr", [92]], ["mīrārī, mīror, mīrātus sum", "bewundern, sich wundern (über)", [87]], ["mīrus, a, um", "erstaunlich, sonderbar", [24]], ["miscēre, misceō, miscuī, mixtum", "mischen, verwirren", [71]], ["miser, misera, miserum", "arm, erbärmlich, unglücklich", [15]], ["mittere, mittō, mīsī, missum", "(los)lassen, schicken, werfen", [16, 27, 48]], ["modestia", "Bescheidenheit, Anstand", [9]], ["modo", "eben (noch); nur", [93]], ["modo … modo", "manchmal … manchmal", [78]], ["modus", "Art, Weise; Maß", [58]], ["moenia, moenium", "Mauern, Stadtmauern", [51]], ["molīrī, molior, molītus sum", "(an)treiben, planen, unternehmen", [86]], ["monēre, moneō, monuī, monitum", "mahnen, ermahnen", [2, 47]], ["mōns, montis", "Berg", [23]], ["mōnstrum", "Ungeheuer", [24]], ["monumentum", "Denkmal", [30]], ["mora", "Aufenthalt, Verzögerung", [55]], ["morārī, moror, morātus sum", "(sich) aufhalten", [85]], ["mōre", "nach Art des / eines …", [78]], ["morī, morior, mortuus sum", "sterben", [87]], ["mors, mortis", "Tod", [22]], ["mortālis, e", "sterblich; Mensch", [55]], ["mortuus, a, um", "gestorben, tot; der Tote", [21]], ["mōs, mōris", "Sitte, Brauch; Charakter", [36]], ["mōtus, mōtūs", "Bewegung", [71]], ["movēre, moveō, mōvī, mōtum", "bewegen, beeindrucken", [7, 27, 55]], ["mox", "bald", [7]], ["mulier, mulieris", "Frau", [19]], ["multa", "viel(es)", [38]], ["multitūdō, multitūdinis", "große Zahl, Menge", [23]], ["multō", "(um) viel", [96]], ["multum", "sehr, viel", [34]], ["multus, a, um", "viel", [14]], ["mūnīre, mūniō", "bauen, befestigen, schützen", [31]], ["mūnītiō, mūnītiōnis", "Bau, Befestigung", [69]], ["mūnus, mūneris", "Geschenk; Aufgabe", [65]], ["mūrus", "Mauer", [1]], ["mūtāre, mūtō", "(ver)ändern, verwandeln", [41]], ["nam", "denn, nämlich", [3]], ["narrāre, narrō", "erzählen", [14]], ["nāscī, nāscor, nātus sum", "entstehen, geboren werden", [88]], ["nātiō, nātiōnis", "Volk, Volksstamm", [23]], ["nātūra", "Natur, Wesen, Beschaffenheit", [6]], ["nauta", "Seemann", [97]], ["nāvigium", "Schiff", [46]], ["nāvis, nāvis", "Schiff", [51]], ["-ne", "Fragepartikel (unübersetzt)", [13]], ["nē", "dass nicht; damit nicht, um nicht", [45, 59]], ["nec … nec", "weder … noch", [82]], ["necāre, necō", "töten", [60]], ["necessārius, a, um", "notwendig", [67]], ["necesse (est)", "(es ist) notwendig", [61]], ["nefārius, a, um", "gottlos, verbrecherisch", [56]], ["negāre, negō", "leugnen, verneinen, verweigern", [45]], ["neglegere, neglegō, neglēxī", "nicht (be)achten, vernachlässigen", [41]], ["negōtium", "Aufgabe, Geschäft, Angelegenheit", [22]], ["nēmō, nēminis", "niemand", [38]], ["nēmō nostrum", "niemand von uns", [68]], ["Neptūnus", "Neptun (Gott des Meeres)", [21]], ["neque / nec", "und nicht, auch nicht", [3, 71]], ["neque tamen", "freilich nicht, jedoch nicht", [75]], ["neque vērō", "aber nicht", [90]], ["neque … neque", "weder … noch", [3]], ["Nerō, Nerōnis", "Nero (römischer Kaiser)", [80]], ["nescīre, nesciō", "nicht wissen, nicht kennen", [10]], ["niger, nigra, nigrum", "schwarz, dunkel", [15]], ["nihil", "nichts", [10]], ["nihil … nisi", "nichts … außer, nur", [69]], ["nimis / nimium", "(all)zu, (all)zu sehr; im Übermaß", [73]], ["nimius, a, um", "unermäßig, zu groß", [91]], ["Nioba", "Niobe (Königin von Theben)", [56]], ["nisi", "wenn nicht", [23]], ["nītī, nītor, nīxus sum", "sich stützen auf; streben nach", [96]], ["nōbilis, e", "adelig, berühmt, vornehm", [79]], ["nōbilitās, nōbilitātis", "Adel, vornehme Abstammung", [90]], ["nōbīs", "uns", [13]], ["nocte", "nachts", [28]], ["nocturnus, a, um", "nächtlich", [71]], ["nōlle, nōlō, nōluī", "nicht wollen", [19, 25]], ["nōmen, nōminis", "Name", [49]], ["nōmināre, nōminō", "nennen", [63]], ["nōn", "nicht", [2]], ["nōn iam", "nicht mehr", [4]], ["nōndum", "noch nicht", [25]], ["nōnne?", "(etwa) nicht?", [17]], ["nōnnūllī, ae, a", "einige, manche", [63]], ["nōs", "wir; uns", [13]], ["nōscere, nōscō, nōvī", "erkennen, kennenlernen; wissen", [38, 95]], ["noster, nostra, nostrum", "unser", [15]], ["novem", "neun", [33]], ["novus, a, um", "neu, ungewöhnlich", [14]], ["nox, noctis", "Nacht", [25]], ["nūbere, nūbō, nūpsī, nūptum", "heiraten", [57]], ["nūdus, a, um", "nackt", [79]], ["nūllō cōgente", "ohne Zwang", [64]], ["nūllus, a, um", "kein", [49]], ["nūllā ratiōne", "ohne jeden Grund", [87]], ["num?", "(im Hauptsatz) etwa?", [42]], ["num", "(im Gliedsatz) ob, ob nicht", [69]], ["nūmen, nūminis", "Gottheit, göttlicher Wille, Macht", [64]], ["numerus", "Zahl, Menge", [51]], ["Numitor, Numitōris", "Numitor (König von Alba)", [33]], ["numquam", "niemals", [4]], ["nunc", "nun, jetzt", [2]], ["nūntiāre, nūntiō", "melden", [21]], ["nūntius", "Bote, Nachricht", [16]], ["nūper", "neulich, vor kurzem", [40]], ["ob", "wegen; für; gegen(über)", [93]], ["obicere, obiiciō, obiēcī, obiectum", "darbieten, vorwerfen", [65]], ["obsecrāre, obsecrō", "anflehen, bitten", [58]], ["obtinēre, obtineō, obtinuī", "(in Besitz) haben, (besetzt) halten", [66]], ["occidere, occidō, occidī", "(zu Boden) fallen, umkommen, untergehen", [28]], ["occidere, occīdō, occīdī, occīsum", "niederschlagen, töten", [31, 61]], ["occultē", "heimlich, im Verborgenen", [61]], ["occupāre, occupō", "besetzen, einnehmen", [35]], ["occupātus, a, um", "beschäftigt (mit)", [82]], ["occurrere, occurrō, occurrī", "begegnen, entgegentreten", [81]], ["Octāvius", "Octavius (der spätere Kaiser Augustus)", [62]], ["octāvus, a, um", "der achte", [47]], ["octō", "acht", [14]], ["oculus", "Auge", [2]], ["ōdisse", "hassen", [95]], ["ōdiō esse", "verhasst sein", [43]], ["odium", "Hass", [43]], ["Oedipus", "Ödipus (sagenhafter Herrscher von Theben)", [59]], ["offerre, offerō, obtulī, oblātum", "anbieten, entgegenbringen", [70]], ["officium", "Dienst, Pflicht, Pflichtgefühl", [28]], ["omittere, omittō, omīsī, omissum", "aufgeben, beiseite lassen", [37, 63]], ["omnia, omnium", "alles", [39]], ["omnīnō", "insgesamt, überhaupt, völlig", [42]], ["omnis, e", "jeder, ganz; alle", [33]], ["onus, oneris", "Last", [89]], ["opera", "Arbeit, Mühe", [88]], ["opīnārī, opīnor, opīnātus sum", "glauben, meinen", [87]], ["opīniō, opīniōnis", "Meinung, (guter) Ruf", [71]], ["oportet", "es gehört sich, es ist nötig", [30]], ["oppidum", "Stadt (Kleinstadt)", [16]], ["opportūnus, a, um", "geeignet, günstig", [34]], ["opprimere, opprimō, oppressī, oppressum", "bedrohen, niederwerfen, unterdrücken", [59]], ["ops, opis", "Hilfe, Kraft; Macht, Mittel, Reichtum", [72]], ["optāre, optō", "wünschen", [78]], ["optimus, a, um", "der beste, sehr gut", [74]], ["optimus quisque", "gerade die Besten", [84]], ["opus, operis", "Arbeit, Werk", [78]], ["opus est", "es ist nötig, man braucht (etw.)", [83]], ["ōrāculum", "Orakel, Orakelspruch", [59]], ["ōrāre, ōrō", "(an)beten, bitten", [45]], ["ōrātiō, ōrātiōnis", "Rede", [44]], ["orbis, orbis", "Kreis(lauf); Erdkreis, Welt", [66]], ["ōrdō, ōrdinis", "Ordnung, Reihe, Stand", [37]], ["Orestēs, Orestis", "Orest (Bruder der Iphigenie)", [77]], ["orīrī, orior, ortus sum", "entstehen, sich erheben", [87]], ["ōrnāmentum", "Schmuck, Schmuckstück", [12]], ["ōrnāre, ōrnō", "ausstatten, schmücken", [8]], ["Orpheus, Orpheī", "Orpheus (berühmter thrakischer Sänger)", [57]], ["ostendere, ostendō, ostendī", "zeigen, erklären", [16, 28]], ["ōtium", "freie Zeit, Ruhe; Frieden", [80]], ["parentēs, parentum", "Eltern", [36]], ["parere, pariō, peperī, partum", "zur Welt bringen, gebären; schaffen", [56]], ["pārēre, pāreō", "gehorchen", [2]], ["pars, partis", "Teil, Seite", [22]], ["parum", "(zu) wenig", [85]], ["parvus, a, um", "klein, gering", [14]], ["pater, patris", "Vater", [20]], ["pater familiās", "Hausherr, Familienoberhaupt", [90]], ["patēre, pateō", "offen stehen", [10]], ["patī, patior, passus sum", "(er)leiden, ertragen, zulassen", [86]], ["patrēs, patrum", "Väter, Vorfahren; Senatoren", [36]], ["patria", "Heimat", [9]], ["patrius, a, um", "heimisch, väterlich", [76]], ["paucī, ae, a", "wenige", [48]], ["paulātim", "allmählich", [29]], ["paulō", "(um) ein wenig", [40]], ["paulō post", "(ein) wenig später", [26]], ["pauper, pauperis", "arm", [39]], ["pāx, pācis", "Frieden", [40]], ["peccāre, peccō", "sündigen, einen Fehler machen", [76]], ["pectus, pectoris", "Brust, Herz", [49]], ["pecūnia", "Geld, Vermögen", [19]], ["pecus, pecoris", "Vieh, Tier", [82]], ["peior, peius", "schlechter, schlimmer", [74]], ["pellere, pellō, pepulī", "stoßen, schlagen, (ver)treiben", [32]], ["per", "durch, hindurch (Präp. mit Akk.)", [16]], ["perdere, perdō, perdidī, perditum", "verlieren, verschwenden, zugrunde richten", [57]], ["perferre, perferō, pertulī, perlātum", "(über)bringen, ertragen", [70]], ["perficere, perficiō, perfēcī, perfectum", "erreichen, fertigstellen, vollenden", [74]], ["pergere, pergō, perrēxī", "aufbrechen; weitermachen", [59]], ["perīculum", "Gefahr", [24]], ["perīre, pereō, periī", "umkommen, zugrunde gehen", [44]], ["permittere, permittō, permīsī, permissum", "erlauben, überlassen", [83]], ["permovēre, permoveō, permōvī, permōtum", "beunruhigen, veranlassen", [84]], ["perniciēs, perniciēī", "Verderben, Vernichtung", [42]], ["perpetuus, a, um", "dauerhaft, ewig", [97]], ["perpetuō", "ununterbrochen", [97]], ["Persae, Persārum", "die Perser", [40]], ["persequī, persequor, persecūtus sum", "verfolgen; erstreben", [88]], ["perspicere, perspiciō, perspexī, perspectum", "durchschauen, genau betrachten, sehen, erkennen", [97]], ["persuādēre, persuādeō, persuāsī, persuāsum", "überreden, überzeugen", [53]], ["perterrēre, perterreō, perterruī, perterritum", "sehr erschrecken, einschüchtern", [54]], ["pertinēre, pertineō", "betreffen, gehören (zu); sich erstrecken (bis)", [52]], ["perturbāre, perturbō", "in Verwirrung bringen", [78]], ["pervenīre, perveniō, pervēnī, perventum", "kommen zu, gelangen", [60]], ["pēs, pedis", "Fuß", [50]], ["pessimus, a, um", "der schlechteste, der schlimmste", [74]], ["petere, petō, petīvī, petītum", "aufsuchen, (er)streben, bitten, verlangen, angreifen", [18, 29, 47]], ["Philippus", "Philipp II. (König von Makedonien)", [38]], ["philosophia", "Philosophie", [84]], ["philosophus", "Philosoph", [75]], ["pietās, pietātis", "Pflichtgefühl, Frömmigkeit", [20]], ["pīrāta", "Pirat, Seeräuber", [46]], ["pius, a, um", "fromm, gerecht, pflichtbewusst", [17]], ["placēre, placeō", "gefallen", [5]], ["placet", "es gefällt jdm.; jdn. beschließt", [63]], ["placidus, a, um", "friedlich, ruhig, sanft", [60]], ["Platō, Platōnis", "Platon (griechischer Philosoph)", [96]], ["plēbs, plēbis", "(nicht adeliges, einfaches) Volk", [36]], ["plēnus, a, um", "voll (von / mit)", [19, 68]], ["plērīque, plēraeque, plēraque", "die meisten, sehr viele", [88]], ["plērumque", "meistens", [96]], ["plūrēs, plūra", "mehrere", [74]], ["plūrimī, ae, a", "die meisten, sehr viele", [74]], ["plūrimum", "am meisten, sehr viel", [81]], ["plūs, plūris", "mehr", [62]], ["Plūtō, Plūtōnis", "Pluto (Gott der Unterwelt)", [28]], ["poena", "Strafe", [46]], ["poenā afficere", "bestrafen", [79]], ["poenam solvere", "Strafe bezahlen, bestraft werden", [55]], ["Poenus, a, um", "punisch, karthagisch; Punier", [41]], ["poēta, poētae", "Dichter", [74]], ["pollicērī, polliceor, pollicitus sum", "versprechen", [85]], ["Pompēiānus, a, um", "pompejanisch; Pompejaner", [18]], ["Pompēī, Pompēiōrum", "Pompeji (Stadt in Kampanien)", [26]], ["pōnere, pōnō, posuī, positum", "(auf)stellen, (hin)legen, setzen", [41]], ["pōns, pontis", "Brücke", [40]], ["populō praesente", "in Anwesenheit des Volkes", [65]], ["populus", "Volk", [6]], ["porta", "Tor", [11]], ["portāre, portō", "bringen, tragen", [8]], ["portus, portūs", "Hafen", [52]], ["pōscere, pōscō, popōscī", "fordern, verlangen", [69]], ["posse, possum, potuī", "können", [17, 25]], ["possidēre, possideō, possēdī, possessum", "besitzen", [81]], ["post", "dann, später", [80]], ["post", "hinter, nach (Präp. mit Akk.)", [12]], ["postea", "nachher, später", [26]], ["posterī, posterōrum", "Nachkommen", [67]], ["postquam", "nachdem, als", [33]], ["postrēmō", "schließlich", [45]], ["pōstulāre, pōstulō", "fordern", [45]], ["potēns, potentis", "mächtig, stark", [56]], ["potentia", "Macht", [90]], ["potestās, potestātis", "(Amts-)Gewalt, Macht", [20]], ["potius", "eher, lieber", [78]], ["praebēre, praebeō", "geben, hinhalten", [4]], ["praecipere, praecipiō, praecēpī, praeceptum", "(be)lehren, vorschreiben", [88]], ["praeclārus, a, um", "großartig", [54]], ["praeda", "Beute", [45]], ["praeesse, praesum, praefuī", "leiten, an der Spitze stehen", [53]], ["praefectus", "Statthalter, Befehlshaber, Präfekt", [78]], ["praeferre, praeferō, praetulī, praelātum", "vorziehen", [70]], ["praemium", "Belohnung, Lohn", [20]], ["praesēns, praesentis", "anwesend, gegenwärtig", [60]], ["praesertim (cum)", "besonders (da / weil)", [96]], ["praesidium", "(Wach-)Posten, Schutztruppe", [76]], ["praestāre, praestō, praestitī", "gewähren, leisten, zeigen; übertreffen", [28, 67]], ["praeter", "außer (Präp. mit Akk.)", [84]], ["praeterea", "außerdem", [81]], ["praeterīre, praetereō, praeteriī, praeteritum", "vorbeigehen (an), übergehen", [49]], ["praetor, praetōris", "Prätor (für die Rechtsprechung zuständiger Beamter); Provinzstatthalter", [70]], ["precārī, precor, precātus sum", "bitten", [85]], ["prehendere, prehendō, prehendī, prehēnsum", "ergreifen, nehmen", [81]], ["premere, premō, pressī, pressum", "(unter)drücken, bedrängen", [58]], ["pretium", "Preis, Wert", [12]], ["prex, precis", "Bitte, Gebet", [50]], ["prīmō", "zuerst", [4]], ["prīmum", "erstens; zuerst; zum ersten Mal", [24]], ["prīmus, a, um", "der erste", [22]], ["prīmā lūce", "bei Tagesanbruch", [28]], ["prīnceps, prīncipis", "der Erste, der führende Mann; Kaiser", [63]], ["prior, prius", "der erste, der frühere", [74]], ["prīstinus, a, um", "früher", [96]], ["prius", "früher, zuerst", [92]], ["priusquam", "bevor, eher als", [55]], ["prīvātus, a, um", "persönlich, privat; Privatperson", [88]], ["prō", "vor; anstelle von, für (Präp. mit Abl.)", [41]], ["probāre, probō", "prüfen, beweisen, für gut befinden", [12]], ["probus, a, um", "anständig, gut", [83]], ["procedere, procedō, processī, processum", "(vorwärts)gehen, vorrücken", [44]], ["procul", "von fern, weit weg", [85]], ["prōdere, prōdō, prōdidī, prōditum", "verraten, überliefern", [67]], ["proelium", "Kampf, Schlacht", [41]], ["profectō", "sicherlich, tatsächlich", [6]], ["prōferre, prōferō, prōtulī, prōlātum", "(hervor)holen, zur Sprache bringen", [83]], ["proficīscī, proficīscor, profectus sum", "(ab)reisen, aufbrechen", [87]], ["prōgredī, prōgredior, prōgressus sum", "vorrücken, weitergehen", [88]], ["prohibēre, prohibeō", "abhalten (von), hindern (an)", [28]], ["prohibēre, nē", "daran hindern, dass", [67]], ["proinde", "also, daher", [67]], ["prōmittere, prōmittō, prōmīsī, prōmissum", "versprechen", [40]], ["prope", "nahe bei, in der Nähe von (Präp. mit Akk.)", [68]], ["properāre, properō", "eilen, sich beeilen", [8]], ["propter", "wegen (Präp. mit Akk.)", [22]], ["prōrsus", "überhaupt, völlig", [90]], ["prōspicere, prōspiciō, prōspexī, prōspectum", "achtgeben, dafür sorgen, (vorher)sehen", [90]], ["prōtinus", "sofort", [61]], ["prōvidēre, prōvideō, prōvīdī, prōvīsum", "vorhersehen; sorgen für", [53]], ["provincia", "Provinz", [9]], ["proximus, a, um", "der nächste; der letzte", [84]], ["prudentia", "Klugheit", [90]], ["pūblicus, a, um", "öffentlich, staatlich", [88]], ["rēs pūblica", "Staat", [33]], ["pudet, puduit", "es beschämt (jdn.)", [77]], ["pudor, pudōris", "Scham, Schamgefühl, Anstand", [84]], ["puella", "Mädchen", [1]], ["puer, puerī", "Junge, Bub", [15]], ["pūgna", "Kampf", [9]], ["pūgnāre, pūgnō", "kämpfen", [9]], ["pulcher, pulchra, pulchrum", "schön", [15]], ["pūnīre, pūniō", "bestrafen", [91]], ["putāre, putō", "glauben, meinen; halten für", [29, 56]], ["quadrāgintā", "vierzig", [51]], ["quaerere, quaerō, quaesīvī, quaesītum", "erwerben wollen, suchen, fragen", [30, 47, 48]], ["quaesō", "bitten", [92]], ["quālis, e", "wie (beschaffen), was für ein(e)", [70]], ["tālis … quālis", "so beschaffen … wie", [73]], ["quam", "als, wie; mit Superlativ: möglichst", [17, 81]], ["quam ob rem", "weshalb, deshalb", [93]], ["quamquam", "obwohl", [19]], ["quamvīs", "wenn auch, obwohl", [67]], ["quandō?", "wann?", [36]], ["quantō … tantō", "je … desto", [96]], ["quantus, a, um", "wie groß, wie viel", [73]], ["quārē?", "weshalb, wodurch; deshalb", [66, 91]], ["quārtus, a, um", "der vierte", [14]], ["quasi", "gleichsam, als ob", [68]], ["quattuor", "vier", [14]], ["-que", "und (angehängt)", [14]], ["quemadmodum", "auf welche Weise, wie", [35]], ["querī, queror, questus sum", "klagen, sich beklagen (über)", [86]], ["quī", "wie", [79]], ["quī, quae, quod", "welcher, welche, welches; der, die, das", [34, 66]], ["quis est, quī", "wen gibt es, der …", [95]], ["quia", "weil", [19]], ["quicumque, quaecumque, quodcumque", "jeder, der; wer auch immer", [91]], ["quid?", "was?", [2]], ["quīdam, quaedam, quiddam", "ein gewisser; einige", [76]], ["quīdam, quaedam, quoddam", "ein gewisser; einige", [76]], ["quidem", "freilich, gewiss, wenigstens, zwar", [31]], ["quidnam?", "was denn?", [66]], ["quiēscere, quiēscō, quiēvī, quiētum", "(aus)ruhen, schlafen", [67]], ["quīn?", "warum nicht?", [17, 68]], ["quīndecim", "fünfzehn", [51]], ["quīngentī, ae, a", "fünfhundert", [51]], ["quīnque", "fünf", [12]], ["quīntus, a, um", "der fünfte", [27]], ["quippe", "freilich, zumal", [91]], ["quippe quī (quippe cum)", "da ja", [95]], ["quis?", "wer?", [3]], ["quisnam?", "wer denn?", [76]], ["quisque, quaeque, quodque", "jeder", [84]], ["quisque, quidque", "jeder", [84]], ["quisquis, quidquid (quicquid)", "jeder, der; wer auch immer", [91]], ["quō?", "wohin?", [37]], ["rapere, rapiō, rapuī, raptum", "wegführen, rauben, wegreißen", [49]], ["rārō", "selten", [82]], ["ratiō, ratiōnis", "Grund, Vernunft, Überlegung; Art und Weise; Berechnung", [87]], ["recēns, recentis", "frisch, neu", [70]], ["recipere, recipiō, recēpī, receptum", "zurücknehmen, aufnehmen, wiederbekommen", [72]], ["recipere sē", "sich zurückziehen", [82]], ["recitāre, recitō", "vortragen, vorlesen", [63]], ["rectē", "richtig, zu Recht", [4]], ["rectus, a, um", "gerade, recht, richtig", [88]], ["reddere, reddō, reddidī, redditum", "zurückgeben; jdn. zu etw. machen", [56]], ["redīre, redeō, rediī", "zurückgehen, zurückkehren", [37]], ["redūcere, redūcō, redūxī, reductum", "zurückführen, zurückziehen", [57]], ["referre, referō, rettulī, relātum", "(zurück)bringen, berichten", [70]], ["rēfert", "es ist wichtig (für jdn.)", [75]], ["regere, regō, rēxī, rēctum", "beherrschen, leiten, lenken", [58]], ["regiō, regiōnis", "Gebiet, Gegend, Richtung", [23]], ["rēgius, a, um", "königlich", [72]], ["rēgnum", "(Königs-)Herrschaft, Reich", [72]], ["religiō, religiōnis", "Glaube, Aberglaube; (Gottes-)Verehrung, Frömmigkeit, Gewissenhaftigkeit", [61]], ["relinquere, relinquō, relīquī, relictum", "verlassen, zurücklassen", [16, 27, 50]], ["reliquiae, reliquiārum", "Überbleibsel, Überrest, Ruine", [26]], ["reliquus, a, um", "übrig, künftig", [91]], ["remanēre, remaneō, remānsī", "(zurück)bleiben", [46]], ["remittere, remittō, remīsī, remissum", "zurückschicken; nachlassen, vermindern", [89]], ["repellere, repellō, reppulī", "zurückstoßen, abweisen, vertreiben", [32]], ["repentē", "plötzlich, unerwartet", [92]], ["reperīre, reperiō, repperī, repertum", "(wieder)finden", [97]], ["repetere, repetō, repetīvī, repetītum", "(zurück)verlangen, wiederholen", [93]], ["reprehendere, reprehendō, reprehendī, reprehēnsum", "schimpfen, kritisieren", [48]], ["requirere, requīrō, requīsīvī, requīsītum", "aufsuchen, sich erkundigen, verlangen", [94]], ["rērī, reor, ratus sum", "meinen", [85]], ["rēs", "Angelegenheit, Ding, Sache", [41]], ["rēs adversae", "Unglück", [53]], ["rēs familiāris", "(Privat-)Vermögen, Besitz", [90]], ["rēs futūrae", "Zukunft", [53]], ["rēs gestae", "Taten", [64]], ["rēs pūblica", "Staat", [33]], ["rēs secundae", "Glück", [53]], ["resistere, resistō, restitī", "stehenbleiben; Widerstand leisten", [36]], ["respicere, respiciō, respexī, respectum", "zurückblicken, berücksichtigen", [57]], ["respondēre, respondeō, respondī, respōnsum", "antworten", [3, 34, 59]], ["respōnsum", "Antwort, Bescheid", [73]], ["restāre, restō, restitī", "übrig bleiben; Widerstand leisten", [79]], ["restituere, restituō, restituī, restitūtum", "wiederherstellen", [61]], ["retinēre, retineō, retinuī, retentum", "zurückhalten, festhalten, behalten", [55]], ["revertī, revertor, revertī, reversum", "zurückkehren", [97]], ["rēx, rēgis", "König", [27]], ["rīdēre, rīdeō, rīsī, rīsum", "lachen, auslachen", [2, 34, 48]], ["rīpa", "Ufer", [92]], ["rogāre, rogō", "fragen, bitten", [8]], ["Rōma", "Rom", [7]], ["Rōmae", "in Rom (wo?)", [83]], ["Rōmam", "nach Rom (wohin?)", [79]], ["Rōmānus, a, um", "römisch; Römer, Einwohner Roms", [9, 14]], ["Rōmulus / Remus", "Romulus / Remus (Zwillingsbrüder und sagenhafte Gründer Roms)", [32]], ["ruere, ruō, ruī", "stürzen, eilen, stürmen", [38]], ["rumpere, rumpō, rūpī, ruptum", "zerbrechen", [79]], ["rūrī", "auf dem Land", [64]], ["rūs, rūris", "Feld, Land (im Gegensatz zur Stadt); Landgut", [64]], ["sacer, sacra, sacrum", "heilig, geweiht (jdm.)", [42]], ["sacerdōs, sacerdōtis", "Priester(in)", [50]], ["sacrum", "Opfer, Heiligtum", [17]], ["saeculum", "Jahrhundert, Menschenalter, Zeit, Zeitalter", [66]], ["saepe", "oft", [4]], ["saevus, a, um", "schrecklich, wild, wütend", [38]], ["salūs, salūtis", "Gesundheit, Rettung, Gruß, Glück", [25]], ["salūtāre, salūtō", "(be)grüßen", [20]], ["salūtem dīcere", "(jdn.) grüßen, begrüßen", [74]], ["salvē!", "sei(d) gegrüßt!", [20]], ["sanctus, a, um", "ehrwürdig, heilig", [50]], ["sanguis, sanguinis", "Blut", [50]], ["sapere, sapiō, sapīvī", "Verstand haben, Geschmack haben", [71]], ["sapiēns, sapientis", "klug, weise", [38]], ["satis", "genug", [80]], ["Sāturnus", "Saturn (Gott der Saat und der Zeit)", [11]], ["saxum", "Fels, Stein", [58]], ["scelerātus, a, um", "verbrecherisch, schändlich; Verbrecher", [5, 60]], ["scelus, sceleris", "Verbrechen; Schurke", [49]], ["scīlicet", "freilich, natürlich", [89]], ["scīre, sciō", "wissen, kennen, verstehen", [10]], ["scrībere, scrībō, scrīpsī, scrīptum", "schreiben, beschreiben", [16, 34, 73]], ["sē", "sich", [19]], ["sēcum", "mit sich, bei sich", [30]], ["secundum", "gemäß; in Übereinstimmung mit (Präp. mit Akk.)", [82]], ["secundus, a, um", "der zweite; günstig", [27]], ["sed", "aber, sondern", [3]], ["sedēre, sedeō, sēdī", "sitzen", [3, 27]], ["sēdēs, sēdis", "Platz, Sitz, Wohnsitz", [72]], ["semper", "immer", [4]], ["senātor, senātōris", "Senator", [18]], ["senātus", "Senat, Senatsversammlung", [52]], ["senex, senis", "Greis, alter Mann", [41]], ["sēnsus, sēnsūs", "Gefühl, Sinn, Verstand", [86]], ["sententia", "Meinung, Satz, Sinn, Antrag (im Senat)", [48]], ["sentīre, sentiō, sēnsī", "fühlen, meinen, wahrnehmen", [29]], ["septem", "sieben", [12]], ["septimus, a, um", "der siebte", [27]], ["sequī, sequor, secūtus sum", "folgen, begleiten", [86]], ["sermō, sermōnis", "Gespräch, Sprache, Gerede", [75]], ["serva", "Sklavin, Dienerin", [1]], ["servāre, servō", "bewahren, retten; beobachten", [15]], ["servīre, serviō", "dienen, Sklave sein", [47]], ["servitūs, servitūtis", "Sklaverei", [20]], ["servus", "Sklave, Diener", [1]], ["seu / sīve", "oder, oder wenn", [94]], ["sex", "sechs", [12]], ["sextus, a, um", "der sechste", [27]], ["sī", "wenn, falls", [19]], ["sibi", "(für) sich", [30]], ["sīc", "so", [4]], ["Sicilia", "Sizilien (Insel im Mittelmeer)", [10]], ["sīdus, sīderis", "Stern, Sternbild", [71]], ["signum", "Merkmal, Zeichen; Statue", [32]], ["silentium", "Schweigen", [42]], ["silva", "Wald", [1]], ["simul", "gleichzeitig, zugleich", [57]], ["simulācrum", "Bild, Schatten (eines Toten)", [95]], ["sine", "ohne (Präp. mit Abl.)", [12]], ["sinere, sinō, sīvī", "(zu)lassen, erlauben", [62]], ["singulus, a, um", "je ein, jeder einzelne", [45]], ["Sisyphus", "Sisyphus (König von Korinth)", [58]], ["sive / seu", "oder, oder wenn; sei es … sei es", [94]], ["socius", "Gefährte, Verbündeter", [47]], ["Sōcratēs, Sōcratis", "Sokrates (griechischer Philosoph)", [75]], ["sōl", "Sonne", [23]], ["Sōl, Sōlis", "Sol (Sonnengott); die Sonne", [46]], ["sōlācium", "Trost, Trostmittel", [74]], ["sōlēre, sōleō, sōlitus sum", "gewohnt sein, gewöhnlich etw. tun", [97]], ["sollicitāre, sollicitō", "aufhetzen, beunruhigen, erregen", [63]], ["Solō, Solōnis", "Solon (athenischer Gesetzgeber)", [72]], ["sōlum", "nur", [21]], ["sōlus, a, um", "allein, einzig", [77]], ["solvere, solvō, solvī, solūtum", "lösen, auflösen; bezahlen", [55]], ["somnus", "Schlaf", [55]], ["sonus", "Ton, Klang, Geräusch", [5]], ["soror, sorōris", "Schwester", [19]], ["sors, sortis", "Los, Orakelspruch, Schicksal", [63]], ["spatium", "Raum, Strecke, Zeit, Zeitraum", [79]], ["speciēs, speciēī", "Anblick, Aussehen, Schein", [46]], ["spectāculum", "Schauspiel", [74]], ["spectāre, spectō", "betrachten, anschauen, hinsehen", [9]], ["spērāre, spērō", "erwarten, hoffen", [31]], ["spēs, speī", "Erwartung, Hoffnung", [41]], ["spīritus, spīritūs", "Atem, Seele", [87]], ["spontē meā", "freiwillig, von selbst", [67]], ["stāre, stō, stetī", "stehen", [16, 28]], ["statim", "sofort", [5]], ["statua", "Statue", [11]], ["statuere, statuō, statuī, statūtum", "aufstellen, beschließen, festsetzen", [47]], ["stēlla", "Stern, Sternbild, Planet", [97]], ["studēre, studeō", "sich bemühen, studieren", [4]], ["studium", "Beschäftigung, Engagement, Interesse", [11]], ["stultus, a, um", "dumm", [14]], ["sub", "unter (wo?) (Präp. mit Abl.)", [24]], ["sub", "unter (wohin?) (Präp. mit Akk.)", [24]], ["subicere, subiiciō, subiēcī, subiectum", "darunterlegen; unterwerfen", [90]], ["subīre, subiō, subiī", "auf sich nehmen; herangehen", [44]], ["subitō", "plötzlich", [5]], ["succēdere, succēdō, successī, successum", "(nach)folgen, nachrücken", [96]], ["suī, suōrum", "die Seinen, die Ihren; seine Leute", [45]], ["sūmere, sūmō, sūmpsī, sūmptum", "nehmen", [86]], ["summus, a, um", "der höchste, oberste", [15]], ["sūmptus, sūmptūs", "Aufwand, Kosten", [93]], ["sunt, quī", "es gibt Leute, die …", [95]], ["superāre, superō", "besiegen, überwinden, übertreffen", [9]], ["superbia", "Stolz, Hochmut", [9]], ["superbus, a, um", "stolz, überheblich", [36]], ["superesse, supersum, superfui", "überleben; übrig sein", [44]], ["superī, superōrum", "Götter", [56]], ["superior, superius", "der frühere, der weiter oben gelegene", [96]], ["supplicium", "Strafe, Hinrichtung; flehentliches Bitten", [65]], ["supplīciō afficere", "hinrichten lassen", [79]], ["supplīciō deōs movēre", "durch flehentliches Bitten die Götter bewegen", [65]], ["supremus, a, um", "der (die, das) höchste, letzte", [87]], ["surgere, surgō, surrexī", "aufrichten; sich erheben, aufstehen", [23, 31]], ["suscipere, suscipiō, suscēpī, susceptum", "auf sich nehmen, sich (einer Sache) annehmen, unternehmen", [89]], ["suspicārī, suspicor, suspicātus sum", "vermuten", [85]], ["suspīciō, suspīciōnis", "Verdacht, Vermutung", [92]], ["sustinēre, sustineō, sustinuī", "ertragen, standhalten", [61]], ["suus, a, um", "sein, ihr", [30]], ["suī, suōrum", "die Seinen, die Ihren; seine (ihre) Leute", [45]], ["Syria", "Syrien", [9]], ["taberna", "Laden, Wirtshaus", [62]], ["tabula", "(Schreib-)Tafel, Gemälde", [4]], ["tacēre, taceō", "schweigen, verschweigen", [2]], ["tālis, e", "derartig, ein solcher; so (beschaffen)", [52]], ["tam", "so", [20]], ["tam … quam", "so … wie", [20]], ["tamen", "dennoch, jedoch", [3, 75]], ["tametsī", "obwohl, wenn auch", [91]], ["tandem", "endlich", [7]], ["tangere, tangō, tetigī, tāctum", "berühren", [43, 54]], ["Tantalus", "Tantalus (Sohn des Jupiter)", [56]], ["tantum", "nur", [5]], ["tantus, a, um", "so groß, so viel", [18]], ["tantus … quantus", "so groß … wie (groß)", [73]], ["Tarquiniī, Tarquiniorum", "Tarquinier (etruskisches Königsgeschlecht)", [36]], ["Tarquinius Superbus", "Tarquinius Superbus (letzter etruskischer König von Rom)", [36]], ["Tartarus", "Tartarus, Unterwelt", [21]], ["taurus", "Stier", [54]], ["tē", "dich", [13]], ["tēctum", "Dach; Haus", [25]], ["tegĕre, tegō, tēxī, tēctum", "bedecken, schützen, verbergen", [39]], ["tēlum", "(Angriffs-)Waffe, Geschoss", [65]], ["tempestās, tempestātis", "Sturm, (schlechtes) Wetter; Zeit", [92]], ["templum", "Tempel", [11]], ["temptāre, temptō", "angreifen; prüfen, versuchen", [26]], ["tempus, temporis", "(günstige) Zeit, Umstände", [49]], ["tendere, tendō, tetendī, tentum", "(aus)strecken, spannen, sich anstrengen", [81]], ["tenebrae, tenebrārum", "Dunkelheit, Finsternis", [26]], ["tenēre, teneō", "halten, festhalten, besitzen; beherrschen", [4]], ["terra", "Erde, Land", [21]], ["terrēre, terreō, terruī, territum", "erschrecken", [5, 47]], ["tertius, a, um", "der dritte", [27]], ["testis, testis", "Zeuge, Zeugin", [72]], ["Thālēs", "Thales (griechischer Philosoph)", [71]], ["Thēbae", "Theben (Stadt in Griechenland)", [59]], ["thermae, thermārum", "warme Bäder, Thermen", [19]], ["Tiberius", "Tiberius (römischer Kaiser)", [78]], ["tibi", "dir", [13]], ["timēre, timeō", "fürchten, Angst haben", [2]], ["timor, timōris", "Angst, Furcht", [25]], ["toga", "Toga", [7]], ["tollere, tollō, sustulī, sublātum", "aufheben, in die Höhe heben, wegnehmen", [73]], ["torquēre, torqueō, torsī, tortum", "drehen; quälen", [5, 27, 50]], ["tot", "so viele", [73]], ["tōtus, a, um", "ganz, gesamt", [40]], ["trādere, trādō, trādidī, trāditum", "übergeben, überliefern", [59]], ["trahere, trahō, trāxī, trāctum", "schleppen, ziehen", [16, 28, 54]], ["Traiānus", "Trajan (römischer Kaiser)", [91]], ["trāns", "über (… hinaus), jenseits (von)", [43]], ["trānsīre, trānseō, trānsīvī, trānsitum", "durchqueren, hinübergehen, überschreiten", [44]], ["trēs, tria", "drei", [33]], ["tribuere, tribuō, tribuī, tribūtum", "schenken, zuteilen", [50]], ["tribūnus", "Tribun (Vertreter eines Stadtbezirks / einer Legion / der Plebs)", [37]], ["trīgintā", "dreißig", [51]], ["tristis, e", "traurig, unfreundlich", [33]], ["Troiānus, a, um", "trojanisch; Trojaner", [29]], ["tū", "du (betont)", [13]], ["tuerī, tueor", "betrachten, schützen; sichern", [85]], ["tunc", "damals, dann", [80]], ["tunica", "Tunika", [7]], ["turba", "(Menschen-)Menge", [7]], ["turbāre, turbō", "durcheinanderbringen, stören", [64]], ["Turnus", "Turnus (Anführer der Rutuler, Gegner des Aeneas)", [31]], ["turpis, e", "unanständig, hässlich, schändlich", [33]], ["turris, turris", "Turm", [51]], ["tūtus, a, um", "sicher", [35]], ["tuus, a, um", "dein", [14]], ["ubī?", "wo?", [8]], ["ubī (prīmum)", "sobald", [61]], ["ultimus, a, um", "der äußerste, der entfernteste, der letzte", [84]], ["ultrō", "freiwillig, noch dazu", [88]], ["umbra", "Schatten", [12]], ["umerus", "Oberarm, Schulter", [62]], ["umquam", "jemals", [62]], ["ūnā", "zugleich, zusammen", [74]], ["unda", "Welle, Gewässer", [55]], ["undē?", "woher?", [10]], ["undique", "von allen Seiten, von überallher", [48]], ["ūniversus, a, um", "gesamt; alle zusammen", [95]], ["ūnus, a, um", "ein, einer, ein einziger", [33]], ["ūnus ex", "einer von", [33]], ["ūnusquisque nostrum", "ein jeder von uns", [95]], ["urbs, urbis", "Stadt; die Stadt Rom", [22]], ["ūsque", "ohne Unterbrechung; bis (zu)", [44, 66]], ["ūsque ad", "bis (zu)", [44]], ["ūsus esse", "von Nutzen sein, nützlich sein", [52]], ["ūsus, ūsūs", "Nutzen, Benutzung", [52]], ["ut", "wie", [10]], ["ut", "dass, sodass; damit; um zu", [45, 59]], ["uterque, utraque, utrumque", "beide, jeder (von zweien)", [93]], ["ūtī, ūtor, ūsus sum", "benutzen, gebrauchen", [88]], ["ūtilis, e", "nützlich", [68]], ["utinam", "hoffentlich, wenn doch", [78]], ["utrumn … an", "ob … oder", [66, 69]], ["uxor, uxōris", "Ehefrau", [18]], ["vacuus, a, um", "leer, frei (von)", [88]], ["valēre, valeō", "gesund sein, stark sein; Einfluss haben", [7]], ["varius, a, um", "bunt, verschieden, vielfältig", [21]], ["-ve", "oder", [90]], ["vehemēns, vehementis", "energisch, heftig", [55]], ["vehēre, vehō, vēxī, vectum", "fahren, tragen, ziehen", [79]], ["vehī, vehor, vectus sum", "sich fortbewegen, fahren", [92]], ["vel", "oder", [22]], ["velle, volō, voluī", "wollen", [19, 25]], ["velut", "wie, wie zum Beispiel", [86]], ["vendere, vendō, vendidī, venditum", "verkaufen", [18, 70]], ["venia", "Gefallen; Nachsicht, Verzeihung", [31]], ["venīre, veniō, vēnī, ventum", "kommen", [10, 27, 48]], ["ventus", "Wind", [6]], ["Venus, Veneris", "Venus (Göttin der Liebe)", [53]], ["vēr, vēris", "Frühling", [64]], ["verbum", "Wort, Äußerung", [11]], ["verērī, vereor, veritus sum", "fürchten, sich scheuen; verehren", [85]], ["Vergilius", "Vergil (römischer Dichter)", [83]], ["vērō", "aber; in der Tat, wirklich", [85, 90]], ["versārī, versor, versātus sum", "sich aufhalten, sich befinden, sich beschäftigen", [87]], ["vertere, vertō, vertī", "drehen, wenden", [27]], ["vērus, a, um", "echt, richtig, wahr", [59]], ["vester, vestra, vestrum", "euer", [15]], ["vestīgium", "Fußsohle, Spur, Stelle", [42]], ["vestis, vestis", "Kleidung; Kleider", [41]], ["Vesūvius", "Vesuv (Vulkan in Kampanien)", [16]], ["vetāre, vetō, vetuī, vetitum", "verbieten", [57]], ["vetus, veteris", "alt", [38]], ["via", "Weg, Straße", [1]], ["victor, victōris", "Sieger", [22]], ["victōria", "Sieg", [45]], ["vīcus", "Dorf, Gasse", [1]], ["vidēre, videō, vīdī, vīsum", "sehen", [7, 27, 48]], ["vidērī, videor, vīsus sum", "scheinen, gelten (als)", [89]], ["vīgintī", "zwanzig", [19]], ["vīlla", "Haus, Landhaus", [1]], ["vincere, vincō, vīcī, victum", "(be)siegen, übertreffen", [27, 48]], ["vinculum", "Band, Fessel; Gefängnis", [58]], ["vindicare, vindicō", "beanspruchen, bestrafen; vorgehen gegen", [56]], ["dolum vindicāre", "eine List bestrafen", [56]], ["in hostēs vindicāre", "gegen die Feinde vorgehen", [56]], ["vīnea", "Weinberg, Weinstock", [16]], ["vīnum", "Wein", [17]], ["violāre, violō", "verwunden, verletzen, entehren", [31]], ["vir, virī", "Mann", [15]], ["virgō, virginis", "Mädchen, Jungfrau", [36]], ["virtūs, virtūtis", "Tapferkeit, Tüchtigkeit, Leistung; Tugend", [22]], ["vīs", "Gewalt, Kraft, Menge", [38]], ["virēs, virium", "Kräfte; Streitkräfte", [67]], ["visere, visō, vīsī, vīsum", "besichtigen, besuchen", [81]], ["vīta", "Leben", [15]], ["vītam agere", "ein Leben führen, leben", [36]], ["vitāre, vitō", "meiden, vermeiden", [55]], ["vitium", "Fehler, schlechte Eigenschaft", [78]], ["vīvere, vīvō, vīxī", "leben", [30]], ["vīvus, a, um", "lebend, lebendig", [95]], ["vix", "kaum, (nur) mit Mühe", [25]], ["vōbīs", "euch", [13]], ["vōbīscum", "mit euch", [13]], ["vocāre, vocō", "rufen; nennen, benennen", [8]], ["volāre, volō", "fliegen, eilen", [55]], ["voluntās, voluntātis", "Wille, Absicht", [20]], ["voluptās, voluptātis", "Lust, Vergnügen", [78]], ["voluptātem capere ē / ex", "Freude haben an", [88]], ["volvere, volvō, volvī, volūtum", "rollen, wälzen; überlegen", [58]], ["vōs", "ihr / euch", [13]], ["vōx, vōcis", "Stimme, Äußerung, Laut", [25]], ["Vulcānus", "Vulkan(us) (Gott des Feuers)", [10]], ["vulgō", "allgemein, gewöhnlich", [97]], ["vulnus, vulneris", "Wunde; (milit.) Verlust", [49]], ["vultus, vultūs", "Gesicht, Gesichtsausdruck; Gesichtszüge", [52]]];
+
+// ============ STATE ============
+let queue = [];           // Hauptstapel (nur einmal durchgehen)
+let repeatQueue = [];     // Stapel für Wiederholungen
+let idx = 0;
+let knew = 0, didnt = 0, repeats = 0;
+let isFlipped = false;
+let isRepeat = false;     // aktuelle Karte eine Wiederholung?
+let totalUnique = 0;      // Anzahl einzigartiger Karten (für Fortschritt)
+let uniqueDone = 0;       // wie viele einzigartige schon "gewusst"
+
+// ============ INIT ============
+document.getElementById('btnStart').addEventListener('click', startSession);
+
+// ============ START ============
+function startSession() {
+  let from = parseInt(document.getElementById('chapterFrom').value) || 1;
+  let to   = parseInt(document.getElementById('chapterTo').value)   || 97;
+  if (from > to) { let t = from; from = to; to = t; }  // autotauschen
+
+  const count = parseInt(document.getElementById('countInput').value) || 20;
+
+  // Filtern: Vokabeln die mindestens ein Kapitel im Bereich haben
+  const pool = VOCAB.filter(v => v[2].some(c => c >= from && c <= to));
+
+  if (pool.length === 0) {
+    alert('Keine Vokabeln im gewählten Kapitelbereich gefunden.');
+    return;
+  }
+
+  // Zufällig mischen & begrenzen
+  const shuffled = pool.slice().sort(() => Math.random() - 0.5);
+  queue = shuffled.slice(0, Math.min(count, shuffled.length));
+  repeatQueue = [];
+  idx = 0; knew = 0; didnt = 0; repeats = 0;
+  totalUnique = queue.length;
+  uniqueDone = 0;
+  isRepeat = false;
+
+  document.getElementById('controlsPanel').classList.add('hidden');
+  document.getElementById('trainerArea').classList.remove('hidden');
+  document.getElementById('endScreen').classList.add('hidden');
+
+  showCard();
+}
+
+// ============ SHOW CARD ============
+function showCard() {
+  // Hauptstapel leer → Wiederholungen abarbeiten
+  if (idx >= queue.length) {
+    if (repeatQueue.length > 0) {
+      // Wiederholungsstapel mischen und als neuen Hauptstapel nehmen
+      queue = repeatQueue.sort(() => Math.random() - 0.5);
+      repeatQueue = [];
+      idx = 0;
+      isRepeat = true;
+    } else {
+      endSession();
+      return;
+    }
+  }
+
+  const entry = queue[idx];
+  isFlipped = false;
+
+  document.getElementById('card').classList.remove('flipped');
+  document.getElementById('frontText').textContent = entry[0];
+  document.getElementById('backText').textContent   = entry[1];
+  document.getElementById('backChapters').innerHTML =
+    'Kapitel: ' + entry[2].map(c => '<span>' + c + '</span>').join('');
+
+  // Wiederholungs-Badge
+  document.getElementById('repeatBadge').classList.toggle('show', isRepeat);
+
+  updateStats();
+}
+
+// ============ FLIP ============
+function flipCard() {
+  if (!isFlipped) {
+    document.getElementById('card').classList.add('flipped');
+    isFlipped = true;
+  }
+}
+
+// ============ ANSWER ============
+function answer(wasKnown) {
+  if (!isFlipped) { flipCard(); return; }  // erst umdrehen lassen
+
+  if (wasKnown) {
+    knew++;
+    if (!isRepeat) uniqueDone++;
+    // Karte wird nicht mehr wiederholt
+  } else {
+    didnt++;
+    repeats++;
+    // Auf Wiederholungsstapel verschieben (nur wenn nicht schon eine Wiederholung die nochmal falsch war → trotzdem nochmal)
+    repeatQueue.push(queue[idx]);
+  }
+
+  idx++;
+  showCard();
+}
+
+// ============ STATS ============
+function updateStats() {
+  // Fortschritt basiert auf einzigartigen gewussten Karten
+  const pct = totalUnique > 0 ? (uniqueDone / totalUnique * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+
+  // Kartenzähler: zeige "aktuelle Position" im aktuellen Durchlauf
+  document.getElementById('statCurrent').textContent = idx + 1;
+  document.getElementById('statTotal').textContent   = queue.length;
+  document.getElementById('statKnew').textContent    = knew;
+  document.getElementById('statRepeat').textContent  = repeats;
+}
+
+// ============ END ============
+function endSession() {
+  document.getElementById('trainerArea').classList.add('hidden');
+  document.getElementById('endScreen').classList.remove('hidden');
+
+  const pct = totalUnique > 0 ? Math.round(knew / (knew + didnt) * 100) : 0;
+  document.getElementById('endPercent').textContent  = pct + '%';
+  document.getElementById('endKnew').textContent     = '✓ Gewusst: ' + knew;
+  document.getElementById('endRepeat').textContent   = '↻ Wiederholungen nötig: ' + repeats;
+}
+
+// ============ RESTART ============
+function restart() {
+  document.getElementById('controlsPanel').classList.remove('hidden');
+  document.getElementById('endScreen').classList.add('hidden');
+  document.getElementById('trainerArea').classList.add('hidden');
+}
+</script>
+</body>
+</html>
